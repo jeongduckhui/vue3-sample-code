@@ -1,0 +1,52 @@
+{
+  "posts": [
+    {
+      "id": 1,
+      "title": "제목1",
+      "content": "내용1",
+      "createdAt": "2025-10-01"
+    },
+    {
+      "id": 2,
+      "title": "제목2",
+      "content": "내용2",
+      "createdAt": "2025-10-02"
+    },
+    {
+      "id": 3,
+      "title": "제목3-1 - 수정",
+      "content": "내용3-1 - 수정",
+      "createdAt": "2025-10-03"
+    },
+    {
+      "id": 4,
+      "title": "제목4 - 제목 수정ㅍㅍㅍ",
+      "content": "내용4 내용 수정",
+      "createdAt": "2025-10-04"
+    },
+    {
+      "title": "axios 등록 제목",
+      "content": "axios 등록 내용",
+      "createdAt": 1761356014422,
+      "id": 9
+    },
+    {
+      "title": "등록 테스트 제목",
+      "content": "등록 테스트 내용",
+      "createdAt": 1761359316196,
+      "id": 10
+    },
+    {
+      "title": "로딩 테스트 제목",
+      "content": "로딩 테스트 내용",
+      "createdAt": 1761361765190,
+      "id": 11
+    },
+    {
+      "title": "ㄴㄴ",
+      "content": "ㄴㄴㄴ",
+      "createdAt": 1761361801495,
+      "id": 12
+    }
+  ]
+}
