@@ -1,32 +1,14 @@
 {
   "posts": [
     {
-      "id": 1,
-      "title": "제목1",
-      "content": "내용1",
-      "createdAt": "2025-10-01"
-    },
-    {
       "id": 2,
-      "title": "제목2",
-      "content": "내용2",
+      "title": "제목2ss",
+      "content": "내용2ss",
       "createdAt": "2025-10-02"
     },
     {
-      "id": 3,
-      "title": "제목3-1 - 수정",
-      "content": "내용3-1 - 수정",
-      "createdAt": "2025-10-03"
-    },
-    {
-      "id": 4,
-      "title": "제목4 - 제목 수정ㅍㅍㅍ",
-      "content": "내용4 내용 수정",
-      "createdAt": "2025-10-04"
-    },
-    {
       "title": "axios 등록 제목",
-      "content": "axios 등록 내용",
+      "content": "axios 등록 내용ㄴ",
       "createdAt": 1761356014422,
       "id": 9
     },
@@ -47,6 +29,24 @@
       "content": "ㄴㄴㄴ",
       "createdAt": 1761361801495,
       "id": 12
+    },
+    {
+      "title": "1212563",
+      "content": null,
+      "createdAt": 1761427039045,
+      "id": 13
+    },
+    {
+      "title": "ss",
+      "content": "ssss",
+      "createdAt": 1761443507415,
+      "id": 14
+    },
+    {
+      "title": "ddd",
+      "content": "ddd",
+      "createdAt": 1761443544167,
+      "id": 15
     }
   ]
 }

@@ -2,7 +2,14 @@
   <form>
     <div class="mb-3">
       <label for="title" class="form-label">제목</label>
-      <input v-model="title" type="text" class="form-control" id="title" />
+      <input
+        v-to-lower-case
+        v-tooltip="'한글만 입력 가능합니다.'"
+        v-model="title"
+        type="text"
+        class="form-control"
+        id="title"
+      />
     </div>
     <div class="mb-3">
       <label for="content" class="form-label">내용</label>

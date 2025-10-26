@@ -25,6 +25,7 @@
 
 <script setup>
 import PostForm from '@/components/posts/PostForm.vue'
+import { useAlert } from '@/composables/alert'
 import useAxios from '@/composables/axios'
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -60,12 +61,22 @@ const setForm = ({ title, content }) => {
 fetchPost()
 
 // axios start ===================================
+const { isLoading } = useAxios()
+const { successAlert } = useAlert()
+
 const edit = async () => {
-  await sendRequest({
-    method: 'patch',
-    url: `/posts/${id}`,
-    data: form.value,
-  })
+  await sendRequest(
+    {
+      method: 'patch',
+      url: `/posts/${id}`,
+      data: form.value,
+    },
+    {
+      onSuccess: res => {
+        successAlert('수정 성공', 'success')
+      },
+    },
+  )
 
   router.push({ name: 'PostDetail', params: { id: id } })
 }

@@ -13,8 +13,8 @@
           목록
         </button>
 
-        <button class="btn btn-primary" type="submit" :disabled="loading">
-          <template v-if="loading">
+        <button class="btn btn-primary" type="submit" :disabled="isLoading">
+          <template v-if="isLoading">
             <span
               class="spinner-grow spinner-grow-sm"
               aria-hidden="true"
@@ -31,6 +31,7 @@
 
 <script setup>
 import PostForm from '@/components/posts/PostForm.vue'
+import { useAlert } from '@/composables/alert'
 import useAxios from '@/composables/axios'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -42,7 +43,8 @@ const form = ref({
 })
 
 // axios start ===================================
-const { loading, sendRequest } = useAxios()
+const { isLoading, sendRequest } = useAxios()
+const { successAlert } = useAlert()
 
 const save = async () => {
   const saveData = {
@@ -50,11 +52,18 @@ const save = async () => {
     createdAt: Date.now(),
   }
 
-  await sendRequest({
-    method: 'post',
-    url: '/posts',
-    data: saveData,
-  })
+  await sendRequest(
+    {
+      method: 'post',
+      url: '/posts',
+      data: saveData,
+    },
+    {
+      onSuccess: res => {
+        successAlert('등록 성공', 'success')
+      },
+    },
+  )
 
   router.push({ name: 'PostList' })
 }

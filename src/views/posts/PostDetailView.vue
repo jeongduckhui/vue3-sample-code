@@ -2,7 +2,9 @@
   <div>
     <h2>{{ post.title }}</h2>
     <p>{{ post.content }}</p>
-    <p class="text-muted">{{ post.createdAt }}</p>
+    <p class="text-muted">
+      {{ $dayjs(post.createdAt).format('YYYY. MM. DD HH:mm:ss') }}
+    </p>
     <hr class="my-4" />
     <div class="row g-2">
       <div class="col-auto">
@@ -30,8 +32,10 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { deletePost, getPostById } from '@/api/posts'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import useAxios from '@/composables/axios'
+import { useAlert } from '@/composables/alert'
+import { useLoading } from '@/composables/loading'
 
 const props = defineProps({
   id: Number,
@@ -39,7 +43,6 @@ const props = defineProps({
 
 const router = useRouter()
 
-// const id = route.params.id
 const id = props.id
 const post = ref({})
 
@@ -66,15 +69,24 @@ const setPost = ({ title, content, createdAt }) => {
 fetchPost()
 
 // axios start ===================================
+const { successAlert } = useAlert()
+
 const remove = async () => {
   if (confirm('삭제하시겠습니까?') === false) {
     return
   }
 
-  await sendRequest({
-    method: 'delete',
-    url: `/posts/${id}`,
-  })
+  await sendRequest(
+    {
+      method: 'delete',
+      url: `/posts/${id}`,
+    },
+    {
+      onSuccess: res => {
+        successAlert('삭제 성공', 'success')
+      },
+    },
+  )
 
   router.push({ name: 'PostList' })
 }
