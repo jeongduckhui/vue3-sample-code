@@ -8,23 +8,15 @@ import { computed, ref, watch } from 'vue'
 export function usePagination(options) {
   const _currentPage = wrap(options.currentPage)
   const _pageSize = wrap(options.pageSize)
-  const _offset = ref(0)
   const total = wrap(options.total)
 
-  const offset = computed({
-    get() {
-      return _offset.value
-    },
-    set(v) {
-      if (!isNumber(v)) {
-        console.warn(
-          `[offset] expected number but got: '${typeof v}' value: '${v}'`,
-        )
-        return
-      }
-      _offset.value = Math.min(v, total.value)
-    },
-  })
+  // offset을 computed로 변경하여 currentPage 또는 pageSize 변경 시 자동 업데이트
+  const offset = computed(() => (_currentPage.value - 1) * _pageSize.value)
+
+  // lastPage는 pageSize와 total에 의존하는 computed 속성
+  const lastPage = computed(() =>
+    Math.max(1, Math.ceil(total.value / _pageSize.value)),
+  )
 
   const currentPage = computed({
     get() {
@@ -37,12 +29,8 @@ export function usePagination(options) {
         )
         return
       }
-      // 아래 원본 구문 주석으로 막음. 원본대로 하면 currentPage가 최초 0으로 반환되어 화면 로딩될 때 페이지가 1로 바인딩되지 않음
-      // 아래 원본 구문 주석으로 막아서 offset값이 정상적으로 계산되지 않더라도 offset은 사용하지 않기 때문에 문제 없을 듯
-      // _currentPage.value = minMax(v, 1, lastPage.value)
-      _currentPage.value = v
-      // set the offset
-      offset.value = (_currentPage.value - 1) * pageSize.value
+      // minMax를 사용하여 유효한 페이지 범위 내에서 값을 설정
+      _currentPage.value = minMax(v, 1, lastPage.value)
     },
   })
 
@@ -62,24 +50,22 @@ export function usePagination(options) {
     },
   })
 
-  const lastPage = computed(() => Math.ceil(total.value / pageSize.value))
-  // make sure the current page is the correct value
-  currentPage.value = _currentPage.value
+  // 페이지네이션 로직 초기화 시, lastPage에 맞게 currentPage를 보정
+  watch(
+    [total, pageSize],
+    _ => {
+      // 데이터가 갱신될 때 현재 페이지가 마지막 페이지보다 크면 마지막 페이지로 이동
+      if (currentPage.value > lastPage.value) {
+        currentPage.value = lastPage.value
+      }
+    },
+    { immediate: true }, // 첫 렌더링 시에도 실행하도록 수정
+  )
 
   const prev = () => --currentPage.value
   const next = () => ++currentPage.value
   const first = () => (currentPage.value = 1)
   const last = () => (currentPage.value = lastPage.value)
-
-  watch(
-    [total, pageSize],
-    _ => {
-      if (currentPage.value > lastPage.value) {
-        currentPage.value = lastPage.value
-      }
-    },
-    { immediate: false }, // no need to run on first render
-  )
 
   return {
     // Mutable state
