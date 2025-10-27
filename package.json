@@ -12,12 +12,14 @@
     "preview": "vite preview",
     "lint": "eslint . --fix",
     "format": "prettier --write src/",
-    "db": "npx json-server --watch db.json --port 5000 --delay 200"
+    "db": "npx json-server --watch db.json --port 5000 --delay 1000"
   },
   "dependencies": {
     "axios": "^1.12.2",
+    "axios-retry": "^4.5.0",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
+    "date-fns": "^4.1.0",
     "dayjs": "^1.11.18",
     "pinia": "^3.0.3",
     "vue": "^3.5.22",
