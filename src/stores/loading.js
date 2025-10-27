@@ -19,7 +19,7 @@ export const useLoadingStore = defineStore('loading', () => {
   }
 
   return {
-    isLoading, // 이제 computed 속성
+    isLoading,
     loadingOn,
     loadingOff,
   }

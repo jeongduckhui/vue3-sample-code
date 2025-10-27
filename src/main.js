@@ -7,6 +7,7 @@ import { createPinia } from 'pinia'
 import globalComponents from './plugins/global-components'
 import globalDirectives from './plugins/global-directives'
 import dayjs from './plugins/dayjs'
+import './api/interceptor'
 
 const app = createApp(App)
 app.use(createPinia())
