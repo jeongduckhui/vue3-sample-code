@@ -57,7 +57,7 @@
 </template>
 
 <script setup>
-import { ref, watchEffect } from 'vue'
+import { onUnmounted, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 
 import PostItem from '@/components/posts/PostItem.vue'
@@ -84,7 +84,8 @@ const changeLimit = value => {
 }
 
 // axios start ===================================
-const { isLoading, sendRequest } = useAxios()
+
+const { isLoading, sendRequest, cancelRequest } = useAxios()
 
 const fetchPosts = async () => {
   const res = await sendRequest({
@@ -97,6 +98,26 @@ const fetchPosts = async () => {
   // 페이징 처리할 때 사용하는 값이 Number 타입인지 확인해야 함.
   totalCount.value = res.headers['x-total-count']
 }
+
+watchEffect(fetchPosts)
+
+/*
+// 이렇게 useAxios를 바로 호출하면 watchEffect(fetchPosts)를 대체할 코딩이 필요함
+const { isLoading, error, cancelRequest } = useAxios(
+  {
+    method: 'get',
+    url: '/posts',
+    params: params.value,
+  },
+  {
+    onSuccess: response => {
+      posts.value = response.data
+      console.log('response.data: ', response.data)
+      totalCount.value = response.headers['x-total-count']
+    },
+  },
+)
+*/
 
 // axios end ===================================
 
@@ -124,8 +145,10 @@ const openModal = ({ title, content, createdAt }) => {
 }
 // Modal End ===================================
 
-watchEffect(fetchPosts)
-// fetchPosts()
+onUnmounted(() => {
+  // 컴포넌트가 파괴될 때 요청을 취소합니다.
+  cancelRequest('컴포넌트 언마운트로 인한 요청 취소')
+})
 </script>
 
 <style scoped></style>
