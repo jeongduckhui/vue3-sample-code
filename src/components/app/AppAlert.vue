@@ -2,13 +2,15 @@
   <div class="app-alert">
     <transition-group name="slide">
       <div
-        v-for="({ message, type }, index) in alerts"
-        :key="index"
+        v-for="({ id, message, type }, index) in alerts"
+        :key="id"
         class="alert"
         :class="typeStyle(type)"
         role="alert"
       >
         {{ message }}
+        <!-- 닫기 버튼 클릭 시 removeAlert 함수 호출 -->
+        <button type="button" @click="removeAlert(id)">닫기</button>
       </div>
     </transition-group>
   </div>
@@ -17,7 +19,8 @@
 <script setup>
 import { useAlert } from '@/composables/alert'
 
-const { alerts } = useAlert()
+// useAlert 컴포저블에서 alerts와 removeAlert를 가져옵니다.
+const { alerts, removeAlert } = useAlert()
 const typeStyle = type => (type === 'error' ? 'alert-danger' : 'alert-primary')
 </script>
 

@@ -1,50 +1,47 @@
 import { axiosInstance } from '@/api'
 import { ref } from 'vue'
 import { useAlert } from '../alert'
-import { useLoading } from '../loading'
+import { useLoading as useGlobalLoading } from '../loading' // 전역 로딩 훅
 
-export default function useAxios() {
-  // 로딩 변수는 store 시 필요없으면 삭제하고 따로 리턴해야 하면 놔두기
-  // const isLoading = ref(false)
+export default function useAxios(options = {}) {
+  const { globalLoading = true } = options
   const error = ref(null)
+  const isLoading = ref(false) // 로컬 로딩 상태
 
-  const { isLoading, loadingOn, loadingOff } = useLoading()
+  const { loadingOn: globalLoadingOn, loadingOff: globalLoadingOff } =
+    useGlobalLoading()
   const { errorAlert } = useAlert()
 
-  const sendRequest = async (config, options = {}) => {
-    // isLoading.value = true
-    loadingOn()
+  const sendRequest = async (config, requestOptions = {}) => {
+    const { onSuccess, onError } = requestOptions
 
-    // 성공 콜백함수, 실패 콜백함수
-    const { onSuccess, onError, onFinally } = options
+    isLoading.value = true // 로컬 로딩 시작
+    if (globalLoading) {
+      globalLoadingOn() // 전역 로딩 시작
+    }
 
     try {
       const response = await axiosInstance(config)
-
       if (onSuccess) {
         onSuccess(response)
       }
-
       return response
     } catch (err) {
       error.value = err
-
       errorAlert(err)
-
       if (onError) {
         onError(err)
       }
     } finally {
-      // isLoading.value = false
-      loadingOff()
-
-      if (onFinally) {
-        onFinally()
+      isLoading.value = false // 로컬 로딩 종료
+      if (globalLoading) {
+        globalLoadingOff() // 전역 로딩 종료
       }
     }
   }
+
   return {
-    isLoading,
+    isLoading, // 로컬 로딩 상태 반환
     error,
     sendRequest,
   }

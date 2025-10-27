@@ -3,22 +3,31 @@ import { ref } from 'vue'
 
 export const useAlertStore = defineStore('alert', () => {
   const alerts = ref([])
+  let nextId = 0
 
-  function errorAlert(message, type = 'error') {
-    alerts.value.push({ message, type })
+  function addAlert(message, type, timeout = 2000) {
+    const id = nextId++
+    alerts.value.push({ id, message, type })
 
     setTimeout(() => {
-      alerts.value.shift()
-    }, 2000)
+      removeAlert(id)
+    }, timeout)
+  }
+
+  function removeAlert(id) {
+    const index = alerts.value.findIndex(alert => alert.id === id)
+    if (index !== -1) {
+      alerts.value.splice(index, 1)
+    }
+  }
+
+  function errorAlert(message) {
+    addAlert(message, 'error')
   }
 
   function successAlert(message) {
-    errorAlert(message, 'success')
+    addAlert(message, 'success')
   }
 
-  return {
-    alerts,
-    errorAlert,
-    successAlert,
-  }
+  return { alerts, errorAlert, successAlert, removeAlert }
 })

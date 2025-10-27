@@ -48,11 +48,11 @@
     <!-- Modal End -->
 
     <hr class="my-5" />
-    <!-- <template v-if="posts && posts.length > 0 && isLoading === false">
+    <template v-if="posts && posts.length > 0 && isLoading === false">
       <AppCard>
         <PostDetailView :id="posts[0].id"></PostDetailView>
       </AppCard>
-    </template> -->
+    </template>
   </div>
 </template>
 
@@ -84,7 +84,7 @@ const changeLimit = value => {
 }
 
 // axios start ===================================
-const { sendRequest } = useAxios()
+const { isLoading, sendRequest } = useAxios()
 
 const fetchPosts = async () => {
   const res = await sendRequest({
