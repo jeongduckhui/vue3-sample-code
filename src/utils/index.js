@@ -63,3 +63,21 @@ export function deepClone(result, ...sources) {
   }
   return result
 }
+
+/**
+ * 년월일(YYYYMMDD) 형태의 데이터를 Date로 반환합니다.
+ * 단, 파라미터가 'YYYYMMDD'의 형식이 아니면 현재일자를 기준으로 반환
+ *
+ * @param {string} dateStr (YYYYMMDD)
+ * @returns {Date}
+ */
+export const parseYYYYMMDD = dateStr => {
+  if (dateStr && dateStr.length == 8) {
+    const year = Number(dateStr.substring(0, 4))
+    const month = Number(dateStr.substring(4, 6))
+    const day = Number(dateStr.substring(6, 8))
+    return new Date(year, month - 1, day) // 월은 0-11이므로 1을 빼줍니다
+  } else {
+    return new Date()
+  }
+}
