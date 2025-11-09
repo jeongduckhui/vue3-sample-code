@@ -7,8 +7,8 @@
       "id": 9
     },
     {
-      "title": "등록 테스트 제목",
-      "content": "등록 테스트 내용",
+      "title": "등록 테스트 제목cscs",
+      "content": "등록 테스트 내용cscs",
       "createdAt": 1761359316196,
       "id": 10
     },
@@ -53,6 +53,12 @@
       "content": "ㅓ",
       "createdAt": 1761650205616,
       "id": 24
+    },
+    {
+      "title": "잘 돌아가나",
+      "content": "확인해보자",
+      "createdAt": 1762673884117,
+      "id": 25
     }
   ]
 }
