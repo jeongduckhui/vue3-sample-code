@@ -55,6 +55,15 @@
           Vue DataGrid
         </RouterLink>
       </li>
+      <li class="nav-item">
+        <RouterLink
+          class="nav-link"
+          active-class="active"
+          to="/playground/transferpopup"
+        >
+          Transfer Popup
+        </RouterLink>
+      </li>
     </ul>
     <hr cl="my-4" />
     <RouterView></RouterView>

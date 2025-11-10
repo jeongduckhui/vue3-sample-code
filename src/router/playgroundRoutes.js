@@ -5,6 +5,7 @@ import PlaygroundDisabledDatePickerView from '@/views/playground/PlaygroundDisab
 import VuePicDatePickerView from '@/views/playground/VuePicDatePickerView.vue'
 import MultiSelectView from '@/views/playground/MultiSelectView.vue'
 import VueDataGrid from '@/views/playground/VueDataGrid.vue'
+import TransferPopupView from '@/views/playground/TransferPopupView.vue'
 
 const playgroundRoutes = [
   {
@@ -41,6 +42,11 @@ const playgroundRoutes = [
         path: 'datagrid',
         name: 'VueDataGrid',
         component: VueDataGrid,
+      },
+      {
+        path: 'transferpopup',
+        name: 'TransferPopup',
+        component: TransferPopupView,
       },
     ],
   },
