@@ -1,0 +1,151 @@
+/* Overlay */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+/* Popup box */
+.popup-wrapper {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: 850px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.close-btn {
+  font-size: 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* Layout */
+.popup-body {
+  display: flex;
+  justify-content: space-between;
+  flex-grow: 1;
+}
+
+/* Panels */
+.panel {
+  width: 45%;
+  position: relative;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+/* List area */
+.panel-list {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 8px;
+  min-height: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.list-row {
+  padding: 8px 4px;
+  border-bottom: 1px solid #eee;
+}
+
+.list-row:last-child {
+  border-bottom: none;
+}
+
+.row-selected {
+  background: #ffe2ec;
+}
+
+.row-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* Transfer Buttons */
+.transfer-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: auto 20px;
+}
+
+.transfer-buttons button {
+  padding: 8px 12px;
+  border: 1px solid #aaa;
+  border-radius: 5px;
+}
+
+.transfer-buttons button:disabled {
+  opacity: 0.4;
+}
+
+/* Up / Down buttons (fix position inside popup!) */
+.sort-buttons {
+  position: absolute;
+  top: 50%;
+  right: 8px; /* 팝업 내부로 확실하게 들어오도록 조정 */
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sort-buttons button {
+  padding: 8px 10px;
+  border: 1px solid #aaa;
+  border-radius: 5px;
+}
+
+.sort-buttons button:disabled {
+  opacity: 0.4;
+}
+
+/* Footer */
+.popup-footer {
+  text-align: right;
+  margin-top: 15px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+}
+
+.footer-btn {
+  padding: 8px 16px;
+  margin-right: 8px;
+  border: 1px solid #aaa;
+  border-radius: 5px;
+  background: white;
+}
+
+.save-btn {
+  font-weight: bold;
+}

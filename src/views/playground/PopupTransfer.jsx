@@ -1,5 +1,5 @@
 // Updated PopupTransfer Component with Vertical Centered Up/Down Buttons
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react'
 
 export default function PopupTransfer({ onClose, onSave }) {
   const initialAllItems = [
@@ -13,111 +13,109 @@ export default function PopupTransfer({ onClose, onSave }) {
     { id: 8, name: '만두' },
     { id: 9, name: '햄버거' },
     { id: 10, name: '피자' },
-  ];
+  ]
 
-  const [leftItems, setLeftItems] = useState([...initialAllItems]);
-  const [rightItems, setRightItems] = useState([]);
-  const [selectedLeftItems, setSelectedLeftItems] = useState([]);
-  const [selectedRightItems, setSelectedRightItems] = useState([]);
+  const [leftItems, setLeftItems] = useState([...initialAllItems])
+  const [rightItems, setRightItems] = useState([])
+  const [selectedLeftItems, setSelectedLeftItems] = useState([])
+  const [selectedRightItems, setSelectedRightItems] = useState([])
 
   const isAllLeftSelected = useMemo(
     () => leftItems.length > 0 && selectedLeftItems.length === leftItems.length,
     [leftItems, selectedLeftItems],
-  );
+  )
 
   const isLeftIndeterminate = useMemo(
     () =>
       selectedLeftItems.length > 0 &&
       selectedLeftItems.length < leftItems.length,
     [leftItems, selectedLeftItems],
-  );
+  )
 
   const isAllRightSelected = useMemo(
     () =>
       rightItems.length > 0 && selectedRightItems.length === rightItems.length,
     [rightItems, selectedRightItems],
-  );
+  )
 
   const isRightIndeterminate = useMemo(
     () =>
       selectedRightItems.length > 0 &&
       selectedRightItems.length < rightItems.length,
     [rightItems, selectedRightItems],
-  );
+  )
 
   const toggleSelectAllLeft = checked => {
-    setSelectedLeftItems(checked ? leftItems.map(i => i.id) : []);
-  };
+    setSelectedLeftItems(checked ? leftItems.map(i => i.id) : [])
+  }
 
   const toggleSelectAllRight = checked => {
-    setSelectedRightItems(checked ? rightItems.map(i => i.id) : []);
-  };
+    setSelectedRightItems(checked ? rightItems.map(i => i.id) : [])
+  }
 
   const moveRight = () => {
-    const itemsToMove = leftItems.filter(i => selectedLeftItems.includes(i.id));
-    const remaining = leftItems.filter(i => !selectedLeftItems.includes(i.id));
+    const itemsToMove = leftItems.filter(i => selectedLeftItems.includes(i.id))
+    const remaining = leftItems.filter(i => !selectedLeftItems.includes(i.id))
 
-    setRightItems([...rightItems, ...itemsToMove]);
-    setLeftItems(remaining);
-    setSelectedLeftItems([]);
-  };
+    setRightItems([...rightItems, ...itemsToMove])
+    setLeftItems(remaining)
+    setSelectedLeftItems([])
+  }
 
   const moveLeft = () => {
     const itemsToMove = rightItems.filter(i =>
       selectedRightItems.includes(i.id),
-    );
-    const remaining = rightItems.filter(
-      i => !selectedRightItems.includes(i.id),
-    );
+    )
+    const remaining = rightItems.filter(i => !selectedRightItems.includes(i.id))
 
-    setLeftItems([...leftItems, ...itemsToMove]);
-    setRightItems(remaining);
-    setSelectedRightItems([]);
-  };
+    setLeftItems([...leftItems, ...itemsToMove])
+    setRightItems(remaining)
+    setSelectedRightItems([])
+  }
 
   const moveRightItemUp = () => {
     setRightItems(prev => {
-      const newList = [...prev];
+      const newList = [...prev]
       const selectedIdx = newList
         .map((item, idx) => (selectedRightItems.includes(item.id) ? idx : -1))
-        .filter(idx => idx !== -1);
+        .filter(idx => idx !== -1)
 
-      if (selectedIdx[0] === 0) return prev;
+      if (selectedIdx[0] === 0) return prev
 
       selectedIdx.forEach(idx => {
-        const temp = newList[idx - 1];
-        newList[idx - 1] = newList[idx];
-        newList[idx] = temp;
-      });
+        const temp = newList[idx - 1]
+        newList[idx - 1] = newList[idx]
+        newList[idx] = temp
+      })
 
-      return newList;
-    });
-  };
+      return newList
+    })
+  }
 
   const moveRightItemDown = () => {
     setRightItems(prev => {
-      const newList = [...prev];
+      const newList = [...prev]
       const selectedIdx = newList
         .map((item, idx) => (selectedRightItems.includes(item.id) ? idx : -1))
-        .filter(idx => idx !== -1);
+        .filter(idx => idx !== -1)
 
       if (selectedIdx[selectedIdx.length - 1] === newList.length - 1)
-        return prev;
+        return prev
 
-      [...selectedIdx].reverse().forEach(idx => {
-        const temp = newList[idx + 1];
-        newList[idx + 1] = newList[idx];
-        newList[idx] = temp;
-      });
+      ;[...selectedIdx].reverse().forEach(idx => {
+        const temp = newList[idx + 1]
+        newList[idx + 1] = newList[idx]
+        newList[idx] = temp
+      })
 
-      return newList;
-    });
-  };
+      return newList
+    })
+  }
 
   const saveChanges = () => {
-    onSave(rightItems);
-    onClose();
-  };
+    onSave(rightItems)
+    onClose()
+  }
 
   return (
     <div
@@ -152,18 +150,23 @@ export default function PopupTransfer({ onClose, onSave }) {
 
             <div className="border rounded p-2 min-h-[200px] max-h-[300px] overflow-y-auto">
               {leftItems.map(item => (
-                <div key={item.id} className="py-2 border-b last:border-none">
+                <div
+                  key={item.id}
+                  className={`py-2 border-b last:border-none ${
+                    selectedLeftItems.includes(item.id) ? 'bg-pink-100' : ''
+                  }`}
+                >
                   <label className="flex items-center cursor-pointer">
                     <input
                       type="checkbox"
                       checked={selectedLeftItems.includes(item.id)}
                       onChange={e => {
                         if (e.target.checked) {
-                          setSelectedLeftItems([...selectedLeftItems, item.id]);
+                          setSelectedLeftItems([...selectedLeftItems, item.id])
                         } else {
                           setSelectedLeftItems(
                             selectedLeftItems.filter(id => id !== item.id),
-                          );
+                          )
                         }
                       }}
                       className="mr-2"
@@ -214,7 +217,12 @@ export default function PopupTransfer({ onClose, onSave }) {
 
               <div className="border rounded p-2 min-h-[200px] max-h-[300px] overflow-y-auto">
                 {rightItems.map(item => (
-                  <div key={item.id} className="py-2 border-b last:border-none">
+                  <div
+                    key={item.id}
+                    className={`py-2 border-b last:border-none ${
+                      selectedRightItems.includes(item.id) ? 'bg-pink-100' : ''
+                    }`}
+                  >
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"
@@ -224,11 +232,11 @@ export default function PopupTransfer({ onClose, onSave }) {
                             setSelectedRightItems([
                               ...selectedRightItems,
                               item.id,
-                            ]);
+                            ])
                           } else {
                             setSelectedRightItems(
                               selectedRightItems.filter(id => id !== item.id),
-                            );
+                            )
                           }
                         }}
                         className="mr-2"
@@ -274,11 +282,14 @@ export default function PopupTransfer({ onClose, onSave }) {
         </div>
 
         <div className="text-right border-t pt-3 mt-3">
+          <button className="px-5 py-2 border rounded mr-2">버튼1</button>
+          <button className="px-5 py-2 border rounded mr-2">버튼2</button>
+          <button className="px-5 py-2 border rounded mr-2">버튼3</button>
           <button className="px-5 py-2 border rounded" onClick={saveChanges}>
             저장
           </button>
         </div>
       </div>
     </div>
-  );
+  )
 }
