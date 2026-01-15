@@ -1,4 +1,4 @@
-@RestController
+8@RestController
 @RequestMapping("/api/common")
 @RequiredArgsConstructor
 public class CommonCodeController {
@@ -86,4 +86,12 @@ public class TraceResponseBodyAdvice implements ResponseBodyAdvice<Object> {
         trace.put("success", tx.isSuccess());
         return trace;
     }
+}
+
+@Around(
+    "@annotation(org.springframework.transaction.annotation.Transactional) || " +
+    "@within(org.springframework.transaction.annotation.Transactional)"
+)
+public Object measureTx(ProceedingJoinPoint pjp) throws Throwable {
+    ...
 }
