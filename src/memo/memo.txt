@@ -1,23 +1,62 @@
-const splitToObjects = ({ id, name }) => {
-  if (!id) return [];
 
-  return id
-    .split(',')
-    .map(v => v.trim())
-    .filter(Boolean)
-    .map(v => ({ id: v, name: v }));
-};
-
-setSelected(prev => {
-  const next = [
-    ...prev,
-    ...splitToObjects(incoming),
-  ];
-
-  // id 기준 중복 제거
-  const unique = Array.from(
-    new Map(next.map(item => [item.id, item])).values()
+const toSet = (idStr) =>
+  new Set(
+    idStr
+      .split(',')
+      .map(v => v.trim())
+      .filter(Boolean)
   );
 
-  return unique;
+
+
+setSelected(prev => {
+  const incomingSet = toSet(incoming.id);
+
+  // 기존 데이터 중 하나라도 겹치면 "중복"
+  const isDuplicate = prev.some(item => {
+    const itemSet = toSet(item.id);
+    return [...incomingSet].some(v => itemSet.has(v));
+  });
+
+  if (isDuplicate) {
+    return prev; // 🔥 중복이면 무시
+  }
+
+  return [...prev, incoming];
+});
+
+
+
+
+
+
+
+
+setSelected(prev => {
+  const incomingSet = toSet(incoming.id);
+
+  let merged = false;
+
+  const next = prev.map(item => {
+    const itemSet = toSet(item.id);
+
+    const hasOverlap = [...incomingSet].some(v => itemSet.has(v));
+    if (!hasOverlap) return item;
+
+    merged = true;
+
+    const union = new Set([...itemSet, ...incomingSet]);
+    const mergedStr = Array.from(union).join(', ');
+
+    return {
+      id: mergedStr,
+      name: mergedStr,
+    };
+  });
+
+  if (!merged) {
+    next.push(incoming);
+  }
+
+  return next;
 });
