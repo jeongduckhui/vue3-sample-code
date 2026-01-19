@@ -1,4 +1,45 @@
 
+
+const addValue = (current, newVal) => {
+  const set = new Set(
+    current
+      .split(',')
+      .map(v => v.trim())
+      .filter(Boolean)
+  );
+
+  set.add(newVal); // 중복이면 자동 무시
+
+  return Array.from(set).join(', ');
+};
+
+
+const addValues = (current, incomingStr) => {
+  const set = new Set(
+    current
+      .split(',')
+      .map(v => v.trim())
+      .filter(Boolean)
+  );
+
+  incomingStr
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean)
+    .forEach(v => set.add(v));
+
+  return Array.from(set).join(', ');
+};
+
+
+
+setValue(prev => ({
+  id: addValue(prev.id, incoming.id),
+  name: addValue(prev.name, incoming.name),
+}));
+
+
+
 const toSet = (idStr) =>
   new Set(
     idStr
@@ -60,3 +101,4 @@ setSelected(prev => {
 
   return next;
 });
+
