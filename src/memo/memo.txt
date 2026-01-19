@@ -1,0 +1,23 @@
+const splitToObjects = ({ id, name }) => {
+  if (!id) return [];
+
+  return id
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean)
+    .map(v => ({ id: v, name: v }));
+};
+
+setSelected(prev => {
+  const next = [
+    ...prev,
+    ...splitToObjects(incoming),
+  ];
+
+  // id 기준 중복 제거
+  const unique = Array.from(
+    new Map(next.map(item => [item.id, item])).values()
+  );
+
+  return unique;
+});
