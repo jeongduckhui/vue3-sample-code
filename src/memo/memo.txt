@@ -1,3 +1,33 @@
+/**
+ * @param incoming { id: string, name: string }
+ * @returns { id: string, name: string }
+ *
+ * - 중복 제거
+ * - 체크 해제 반영
+ * - id / name 구조 유지
+ */
+const syncCommaObject = (incoming = { id: '', name: '' }) => {
+  const toArray = (str = '') =>
+    str
+      .split(',')
+      .map(v => v.trim())
+      .filter(Boolean);
+
+  const unique = Array.from(
+    new Set(toArray(incoming.id))
+  );
+
+  const joined = unique.join(', ');
+
+  return {
+    id: joined,
+    name: joined,
+  };
+};
+
+
+
+
 
 const [value, setValue] = useState({
   id: '',
@@ -139,5 +169,6 @@ setSelected(prev => {
 
   return next;
 });
+
 
 
