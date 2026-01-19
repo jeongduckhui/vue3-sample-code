@@ -1,4 +1,42 @@
 
+const [value, setValue] = useState({
+  id: '',
+  name: '',
+});
+
+const handleMultiSelectChange = (selectedArr) => {
+  setValue(syncCommaObject(selectedArr));
+};
+
+
+
+
+
+/**
+ * @param selectedArr string[]  // 멀티셀렉트 현재 선택값 전체
+ * @returns { id: string, name: string }
+ */
+const syncCommaObject = (selectedArr = []) => {
+  const unique = Array.from(
+    new Set(
+      selectedArr
+        .map(v => v?.trim())
+        .filter(Boolean)
+    )
+  );
+
+  const joined = unique.join(', ');
+
+  return {
+    id: joined,
+    name: joined,
+  };
+};
+
+
+
+
+
 
 const addValue = (current, newVal) => {
   const set = new Set(
@@ -101,4 +139,5 @@ setSelected(prev => {
 
   return next;
 });
+
 
