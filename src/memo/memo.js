@@ -1,39 +1,33 @@
-const handleCellContextMenu = (params) => {
-  const event = params.event;
+const findRealRowByMouse = (params) => {
+  const e = params.event;
 
-  // 🔥 grid root
-  const gridRoot = event.currentTarget.closest('.ag-root');
-  if (!gridRoot) return;
+  const gridRoot = e.currentTarget.closest('.ag-root');
+  if (!gridRoot) return null;
 
-  // 🔥 body viewport
   const bodyViewport = gridRoot.querySelector('.ag-body-viewport');
-  if (!bodyViewport) return;
+  if (!bodyViewport) return null;
 
   const rect = bodyViewport.getBoundingClientRect();
 
-  // 🔥 마우스 Y를 grid 내부 좌표로 변환
-  const relativeY = event.clientY - rect.top;
+  // 1) viewport 안에서의 Y
+  const relativeY = e.clientY - rect.top;
 
-  // 🔥 현재 화면에 렌더된 row nodes
-  const rowNodes = [];
-  params.api.forEachNodeAfterFilterAndSort(node => {
-    if (!node.rowPinned) {
-      rowNodes.push(node);
-    }
-  });
+  // 2) 스크롤 보정 (🔥 이게 핵심)
+  const yInAllRows = relativeY + bodyViewport.scrollTop;
 
-  let accHeight = 0;
-  let clickedRowNode = null;
+  // 3) 현재 렌더된 노드들에서 rowTop/rowHeight로 실제 행 찾기
+  //    (가상 스크롤이므로 전체 노드 순회 X, 렌더된 것만)
+  const rendered = params.api.getRenderedNodes?.() ?? [];
+  for (const node of rendered) {
+    // rowTop은 "전체 rows 기준" pixel top
+    const top = node.rowTop ?? 0;
+    const h = node.rowHeight ?? 0;
 
-  for (const node of rowNodes) {
-    accHeight += node.rowHeight;
-    if (relativeY <= accHeight) {
-      clickedRowNode = node;
-      break;
+    if (yInAllRows >= top && yInAllRows < top + h) {
+      return node; // ✅ 이 node가 클릭된 실제 행
     }
   }
 
-  const realRowIndex = clickedRowNode?.rowIndex;
-
-  console.log('🔥 실제 클릭 행 index:', realRowIndex);
+  // fallback: 못 찾으면 params.node(병합 시작행)라도 반환
+  return params.node ?? null;
 };
