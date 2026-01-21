@@ -1,34 +1,39 @@
 const handleCellContextMenu = (params) => {
-  // ✅ 행 정보
-  const rowIndex = params.node.rowIndex;      // 0-based
-  const rowNumber = rowIndex + 1;              // 사용자 표시용
-  const rowData = params.node.data;             // 실제 데이터
-  const isPinned = params.node.rowPinned;       // pinned 여부
-
-  // ✅ 컬럼 정보 (이전 답변 로직)
   const event = params.event;
+
+  // 🔥 grid root
   const gridRoot = event.currentTarget.closest('.ag-root');
+  if (!gridRoot) return;
+
+  // 🔥 body viewport
   const bodyViewport = gridRoot.querySelector('.ag-body-viewport');
+  if (!bodyViewport) return;
+
   const rect = bodyViewport.getBoundingClientRect();
-  const relativeX = event.clientX - rect.left;
 
-  const columns = params.api.getAllDisplayedColumns();
-  let acc = 0;
-  let clickedCol = null;
+  // 🔥 마우스 Y를 grid 내부 좌표로 변환
+  const relativeY = event.clientY - rect.top;
 
-  for (const col of columns) {
-    acc += col.getActualWidth();
-    if (relativeX <= acc) {
-      clickedCol = col;
+  // 🔥 현재 화면에 렌더된 row nodes
+  const rowNodes = [];
+  params.api.forEachNodeAfterFilterAndSort(node => {
+    if (!node.rowPinned) {
+      rowNodes.push(node);
+    }
+  });
+
+  let accHeight = 0;
+  let clickedRowNode = null;
+
+  for (const node of rowNodes) {
+    accHeight += node.rowHeight;
+    if (relativeY <= accHeight) {
+      clickedRowNode = node;
       break;
     }
   }
 
-  console.log({
-    rowIndex,        // 내부 index
-    rowNumber,       // 화면 번호
-    rowData,         // 데이터
-    pinned: isPinned,
-    colId: clickedCol?.getColId(),
-  });
+  const realRowIndex = clickedRowNode?.rowIndex;
+
+  console.log('🔥 실제 클릭 행 index:', realRowIndex);
 };
