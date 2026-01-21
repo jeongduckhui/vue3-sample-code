@@ -1,32 +1,34 @@
 const handleCellContextMenu = (params) => {
+  // ✅ 행 정보
+  const rowIndex = params.node.rowIndex;      // 0-based
+  const rowNumber = rowIndex + 1;              // 사용자 표시용
+  const rowData = params.node.data;             // 실제 데이터
+  const isPinned = params.node.rowPinned;       // pinned 여부
+
+  // ✅ 컬럼 정보 (이전 답변 로직)
   const event = params.event;
-
-  // 1️⃣ grid root
   const gridRoot = event.currentTarget.closest('.ag-root');
-  if (!gridRoot) return;
-
-  // 2️⃣ body viewport
   const bodyViewport = gridRoot.querySelector('.ag-body-viewport');
-  if (!bodyViewport) return;
-
   const rect = bodyViewport.getBoundingClientRect();
-
-  // 3️⃣ grid 내부 X 좌표
   const relativeX = event.clientX - rect.left;
 
-  // 🔥 4️⃣ 표시 중인 컬럼들 (v29+ 정답)
   const columns = params.api.getAllDisplayedColumns();
-
-  let accWidth = 0;
-  let clickedColumn = null;
+  let acc = 0;
+  let clickedCol = null;
 
   for (const col of columns) {
-    accWidth += col.getActualWidth();
-    if (relativeX <= accWidth) {
-      clickedColumn = col;
+    acc += col.getActualWidth();
+    if (relativeX <= acc) {
+      clickedCol = col;
       break;
     }
   }
 
-  console.log('✅ 실제 클릭 컬럼:', clickedColumn?.getColId());
+  console.log({
+    rowIndex,        // 내부 index
+    rowNumber,       // 화면 번호
+    rowData,         // 데이터
+    pinned: isPinned,
+    colId: clickedCol?.getColId(),
+  });
 };
