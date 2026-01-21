@@ -1,21 +1,21 @@
 const handleCellContextMenu = (params) => {
   const event = params.event;
 
-  // 🔥 grid root DOM (가장 안전)
+  // 1️⃣ grid root
   const gridRoot = event.currentTarget.closest('.ag-root');
   if (!gridRoot) return;
 
-  // 🔥 body viewport
+  // 2️⃣ body viewport
   const bodyViewport = gridRoot.querySelector('.ag-body-viewport');
   if (!bodyViewport) return;
 
   const rect = bodyViewport.getBoundingClientRect();
 
-  // 마우스 X를 grid 내부 기준 좌표로 변환
+  // 3️⃣ grid 내부 X 좌표
   const relativeX = event.clientX - rect.left;
 
-  // 현재 화면에 보이는 컬럼들
-  const columns = params.columnApi.getAllDisplayedColumns();
+  // 🔥 4️⃣ 표시 중인 컬럼들 (v29+ 정답)
+  const columns = params.api.getAllDisplayedColumns();
 
   let accWidth = 0;
   let clickedColumn = null;
@@ -28,5 +28,5 @@ const handleCellContextMenu = (params) => {
     }
   }
 
-  console.log('🔥 실제 클릭 컬럼:', clickedColumn?.getColId());
+  console.log('✅ 실제 클릭 컬럼:', clickedColumn?.getColId());
 };
