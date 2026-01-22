@@ -1,17 +1,20 @@
-function buildGroupMap(columns) {
-  const result = {};
-  let currentMM = null;
+function buildExpandColumnsFromMMWW(columns) {
+  const result = [];
+  let currentGroupKey = null;
 
   columns.forEach(({ code }) => {
+    // 부모 MM
     if (code.startsWith('MM')) {
-      // 🔹 새 부모 그룹 생성
-      currentMM = code;
-      result[currentMM] = [];
+      currentGroupKey = code;
+      return;
     }
 
-    if (code.startsWith('WW') && currentMM) {
-      // 🔹 직전 MM 그룹에 추가
-      result[currentMM].push(code);
+    // 자식 WW
+    if (code.startsWith('WW') && currentGroupKey) {
+      result.push({
+        groupKey: currentGroupKey,
+        children: code,
+      });
     }
   });
 
