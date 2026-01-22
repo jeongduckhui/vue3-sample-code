@@ -1,174 +1,19 @@
-/**
- * @param incoming { id: string, name: string }
- * @returns { id: string, name: string }
- *
- * - 중복 제거
- * - 체크 해제 반영
- * - id / name 구조 유지
- */
-const syncCommaObject = (incoming = { id: '', name: '' }) => {
-  const toArray = (str = '') =>
-    str
-      .split(',')
-      .map(v => v.trim())
-      .filter(Boolean);
+function buildGroupMap(columns) {
+  const result = {};
+  let currentMM = null;
 
-  const unique = Array.from(
-    new Set(toArray(incoming.id))
-  );
+  columns.forEach(({ code }) => {
+    if (code.startsWith('MM')) {
+      // 🔹 새 부모 그룹 생성
+      currentMM = code;
+      result[currentMM] = [];
+    }
 
-  const joined = unique.join(', ');
-
-  return {
-    id: joined,
-    name: joined,
-  };
-};
-
-
-
-
-
-const [value, setValue] = useState({
-  id: '',
-  name: '',
-});
-
-const handleMultiSelectChange = (selectedArr) => {
-  setValue(syncCommaObject(selectedArr));
-};
-
-
-
-
-
-/**
- * @param selectedArr string[]  // 멀티셀렉트 현재 선택값 전체
- * @returns { id: string, name: string }
- */
-const syncCommaObject = (selectedArr = []) => {
-  const unique = Array.from(
-    new Set(
-      selectedArr
-        .map(v => v?.trim())
-        .filter(Boolean)
-    )
-  );
-
-  const joined = unique.join(', ');
-
-  return {
-    id: joined,
-    name: joined,
-  };
-};
-
-
-
-
-
-
-const addValue = (current, newVal) => {
-  const set = new Set(
-    current
-      .split(',')
-      .map(v => v.trim())
-      .filter(Boolean)
-  );
-
-  set.add(newVal); // 중복이면 자동 무시
-
-  return Array.from(set).join(', ');
-};
-
-
-const addValues = (current, incomingStr) => {
-  const set = new Set(
-    current
-      .split(',')
-      .map(v => v.trim())
-      .filter(Boolean)
-  );
-
-  incomingStr
-    .split(',')
-    .map(v => v.trim())
-    .filter(Boolean)
-    .forEach(v => set.add(v));
-
-  return Array.from(set).join(', ');
-};
-
-
-
-setValue(prev => ({
-  id: addValue(prev.id, incoming.id),
-  name: addValue(prev.name, incoming.name),
-}));
-
-
-
-const toSet = (idStr) =>
-  new Set(
-    idStr
-      .split(',')
-      .map(v => v.trim())
-      .filter(Boolean)
-  );
-
-
-
-setSelected(prev => {
-  const incomingSet = toSet(incoming.id);
-
-  // 기존 데이터 중 하나라도 겹치면 "중복"
-  const isDuplicate = prev.some(item => {
-    const itemSet = toSet(item.id);
-    return [...incomingSet].some(v => itemSet.has(v));
+    if (code.startsWith('WW') && currentMM) {
+      // 🔹 직전 MM 그룹에 추가
+      result[currentMM].push(code);
+    }
   });
 
-  if (isDuplicate) {
-    return prev; // 🔥 중복이면 무시
-  }
-
-  return [...prev, incoming];
-});
-
-
-
-
-
-
-
-
-setSelected(prev => {
-  const incomingSet = toSet(incoming.id);
-
-  let merged = false;
-
-  const next = prev.map(item => {
-    const itemSet = toSet(item.id);
-
-    const hasOverlap = [...incomingSet].some(v => itemSet.has(v));
-    if (!hasOverlap) return item;
-
-    merged = true;
-
-    const union = new Set([...itemSet, ...incomingSet]);
-    const mergedStr = Array.from(union).join(', ');
-
-    return {
-      id: mergedStr,
-      name: mergedStr,
-    };
-  });
-
-  if (!merged) {
-    next.push(incoming);
-  }
-
-  return next;
-});
-
-
-
+  return result;
+}
