@@ -1,22 +1,11 @@
-function buildExpandColumnsFromMMWW(columns) {
-  const result = [];
-  let currentGroupKey = null;
+const obj = {
+  A: ['B', 'C'],
+};
 
-  columns.forEach(({ code }) => {
-    // 부모 MM
-    if (code.startsWith('MM')) {
-      currentGroupKey = code;
-      return;
-    }
+const target = 'B';
 
-    // 자식 WW
-    if (code.startsWith('WW') && currentGroupKey) {
-      result.push({
-        groupKey: currentGroupKey,
-        children: code,
-      });
-    }
-  });
+const key = Object.entries(obj).find(
+  ([_, values]) => values.includes(target)
+)?.[0];
 
-  return result;
-}
+console.log(key); // 'A'
