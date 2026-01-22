@@ -1,33 +1,195 @@
-const findRealRowByMouse = (params) => {
-  const e = params.event;
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AgGridReact } from 'ag-grid-react';
+import CustomHeader from './CustomHeader';
 
-  const gridRoot = e.currentTarget.closest('.ag-root');
-  if (!gridRoot) return null;
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
 
-  const bodyViewport = gridRoot.querySelector('.ag-body-viewport');
-  if (!bodyViewport) return null;
+/** 서버 메타를 가져오는 기존 함수 */
+function getServerMeta() {
+  return {
+    baseColumns: ['A', 'B', 'D'],
+    expandColumns: [
+      { groupKey: 'M1', children: 'W1' },
+      { groupKey: 'M1', children: 'W2' },
+      { groupKey: 'M1', children: 'W3' },
+      { groupKey: 'M2', children: 'W4' },
+      { groupKey: 'M2', children: 'W5' },
+      { groupKey: 'M2', children: 'W6' },
+      { groupKey: 'M2', children: 'W7' },
+      { groupKey: 'M3', children: 'W8' },
+    ],
+  };
+}
 
-  const rect = bodyViewport.getBoundingClientRect();
+/** 더미 데이터 */
+const rowData = Array.from({ length: 5 }).map((_, i) => ({
+  A: `A${i + 1}`,
+  B: `B${i + 1}`,
+  C: `C${i + 1}`,
+  D: `D${i + 1}`,
+  W1: 10, W2: 20, W3: 30,
+  W4: 40, W5: 50, W6: 60, W7: 70,
+  W8: 80,
+}));
 
-  // 1) viewport 안에서의 Y
-  const relativeY = e.clientY - rect.top;
+export default function Grid() {
+  /** 핵심: serverMeta를 Grid state로 관리 */
+  const [serverMeta, setServerMeta] = useState(null);
 
-  // 2) 스크롤 보정 (🔥 이게 핵심)
-  const yInAllRows = relativeY + bodyViewport.scrollTop;
+  /** 펼침/접힘 상태 */
+  const [expandedMap, setExpandedMap] = useState({});
 
-  // 3) 현재 렌더된 노드들에서 rowTop/rowHeight로 실제 행 찾기
-  //    (가상 스크롤이므로 전체 노드 순회 X, 렌더된 것만)
-  const rendered = params.api.getRenderedNodes?.() ?? [];
-  for (const node of rendered) {
-    // rowTop은 "전체 rows 기준" pixel top
-    const top = node.rowTop ?? 0;
-    const h = node.rowHeight ?? 0;
+  /** 셀렉트 상태 (Grid 내부라고 가정) */
+  const [selectMode, setSelectMode] = useState('');
 
-    if (yInAllRows >= top && yInAllRows < top + h) {
-      return node; // ✅ 이 node가 클릭된 실제 행
+  /** 조회 버튼 */
+  const fnSearch = () => {
+    // 조회 조건 세팅 (생략)
+    // const searchCond = settingSearchCond();
+
+    // serverMeta 계산
+    const meta = getServerMeta();
+
+    // 반드시 state로 올린다
+    setServerMeta(meta);
+
+    // 조회 시 셀렉트 초기화
+    setSelectMode('');
+  };
+
+  /**
+   * expandColumns → 그룹핑
+   */
+  const grouped = useMemo(() => {
+    if (!serverMeta) return {};
+
+    return serverMeta.expandColumns.reduce((acc, cur) => {
+      const { groupKey, children } = cur;
+      if (!acc[groupKey]) acc[groupKey] = [];
+      acc[groupKey].push(children);
+      return acc;
+    }, {});
+  }, [serverMeta]);
+
+  /**
+   * grouped 변경 시 expandedMap 초기화
+   */
+  useEffect(() => {
+    if (!serverMeta) {
+      setExpandedMap({});
+      return;
     }
-  }
 
-  // fallback: 못 찾으면 params.node(병합 시작행)라도 반환
-  return params.node ?? null;
-};
+    const init = {};
+    Object.keys(grouped).forEach(k => {
+      init[k] = false;
+    });
+
+    setExpandedMap(init);
+  }, [grouped, serverMeta]);
+
+  /**
+   * 셀렉트 전체 펼침/접힘
+   */
+  useEffect(() => {
+    if (selectMode !== 'Y' && selectMode !== 'N') return;
+
+    setExpandedMap(prev => {
+      const next = {};
+      Object.keys(prev).forEach(k => {
+        next[k] = selectMode === 'Y';
+      });
+      return next;
+    });
+  }, [selectMode]);
+
+  /**
+   * 개별 아이콘 클릭
+   */
+  const handleIconClick = useCallback(groupKey => {
+    setExpandedMap(prev => ({
+      ...prev,
+      [groupKey]: !prev[groupKey],
+    }));
+    setSelectMode('');
+  }, []);
+
+  /**
+   * columnDefs 계산
+   */
+  const columnDefs = useMemo(() => {
+    if (!serverMeta) return [];
+
+    const cols = [];
+
+    /** 기본 컬럼 */
+    serverMeta.baseColumns.forEach(col => {
+      cols.push({
+        field: col,
+        width: 120,
+      });
+    });
+
+    /** M / W 컬럼 */
+    Object.entries(grouped).forEach(([groupKey, children]) => {
+      // 부모(M)
+      cols.push({
+        colId: `TOGGLE_${groupKey}`,
+        headerComponent: CustomHeader,
+        headerComponentParams: {
+          label: groupKey,
+          expanded: expandedMap[groupKey],
+          onIconClick: () => handleIconClick(groupKey),
+        },
+        valueGetter: () => '',
+        width: 90,
+        suppressMenu: true,
+        sortable: false,
+        filter: false,
+      });
+
+      // 자식(W)
+      children.forEach(child => {
+        cols.push({
+          field: child,
+          hide: !expandedMap[groupKey],
+          width: 100,
+        });
+      });
+    });
+
+    return cols;
+  }, [serverMeta, grouped, expandedMap, handleIconClick]);
+
+  return (
+    <div style={{ padding: 16 }}>
+      {/* 조회 UI */}
+      <select
+        value={selectMode}
+        onChange={e => setSelectMode(e.target.value)}
+      >
+        <option value="">기본</option>
+        <option value="Y">펼치기</option>
+        <option value="N">접기</option>
+      </select>
+
+      <button onClick={fnSearch} style={{ marginLeft: 8 }}>
+        조회
+      </button>
+
+      {/* Grid */}
+      <div className="ag-theme-alpine" style={{ height: 350, marginTop: 12 }}>
+        <AgGridReact
+          rowData={rowData}
+          columnDefs={columnDefs}
+          defaultColDef={{ resizable: true }}
+        />
+      </div>
+    </div>
+  );
+}
+
+
+
+
