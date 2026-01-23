@@ -1,3 +1,22 @@
+const result = data.reduce(
+  (acc, { groupkey, children }) => {
+    acc.groupkeys.add(groupkey);
+    acc.children.push(children);
+    return acc;
+  },
+  { groupkeys: new Set(), children: [] }
+);
+
+const groupKeys = [...result.groupkeys];
+const childrenList = result.children;
+
+console.log(groupKeys);     // ['MM1', 'MM2']
+console.log(childrenList);  // ['WW1', 'WW2', 'WW3']
+
+
+
+
+
 function buildExpandColumnsFromMMWW(columns) {
   const result = [];
   let currentGroupKey = null;
@@ -34,4 +53,5 @@ const key = Object.entries(obj).find(
 )?.[0];
 
 console.log(key); // 'A'
+
 
