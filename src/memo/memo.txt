@@ -1,3 +1,28 @@
+function buildExpandColumnsFromMMWW(columns) {
+  const result = [];
+  let currentGroupKey = null;
+
+  columns.forEach(({ code }) => {
+    // 부모 MM
+    if (code.startsWith('MM')) {
+      currentGroupKey = code;
+      return;
+    }
+
+    // 자식 WW
+    if (code.startsWith('WW') && currentGroupKey) {
+      result.push({
+        groupKey: currentGroupKey,
+        children: code,
+      });
+    }
+  });
+
+  return result;
+}
+
+
+
 const obj = {
   A: ['B', 'C'],
 };
@@ -9,3 +34,4 @@ const key = Object.entries(obj).find(
 )?.[0];
 
 console.log(key); // 'A'
+
