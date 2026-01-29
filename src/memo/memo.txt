@@ -1,57 +1,47 @@
-const result = data.reduce(
-  (acc, { groupkey, children }) => {
-    acc.groupkeys.add(groupkey);
-    acc.children.push(children);
-    return acc;
+const isEmptyCond = value =>
+  value === null ||
+  value === undefined ||
+  value === '' ||
+  value === false;
+
+const parseMultiValue = value =>
+  typeof value === 'string'
+    ? value.split(',').map(v => v.trim()).filter(Boolean)
+    : [];
+
+const filterHandlers = {
+  // 멀티 셀렉트 (a,b,c)
+  status: (row, value) => {
+    const values = parseMultiValue(value);
+    return values.includes(row.status);
   },
-  { groupkeys: new Set(), children: [] }
-);
 
-const groupKeys = [...result.groupkeys];
-const childrenList = result.children;
+  // 단일 선택
+  type: (row, value) =>
+    row.type === value,
 
-console.log(groupKeys);     // ['MM1', 'MM2']
-console.log(childrenList);  // ['WW1', 'WW2', 'WW3']
-
-
-
-
-
-function buildExpandColumnsFromMMWW(columns) {
-  const result = [];
-  let currentGroupKey = null;
-
-  columns.forEach(({ code }) => {
-    // 부모 MM
-    if (code.startsWith('MM')) {
-      currentGroupKey = code;
-      return;
-    }
-
-    // 자식 WW
-    if (code.startsWith('WW') && currentGroupKey) {
-      result.push({
-        groupKey: currentGroupKey,
-        children: code,
-      });
-    }
-  });
-
-  return result;
-}
-
-
-
-const obj = {
-  A: ['B', 'C'],
+  // boolean 조건
+  vipOnly: (row, value) =>
+    value ? row.vipYn === 'Y' : true,
 };
 
-const target = 'B';
 
-const key = Object.entries(obj).find(
-  ([_, values]) => values.includes(target)
-)?.[0];
+const applyFilter = (data, searchCond) => {
+  return data.filter(row =>
+    Object.entries(searchCond).every(([key, value]) => {
+      // 조건 미선택 → 통과
+      if (isEmptyCond(value)) return true;
 
-console.log(key); // 'A'
+      const handler = filterHandlers[key];
+      if (!handler) return true; // 정의 안 된 조건 무시
+
+      return handler(row, value);
+    })
+  );
+};
 
 
+const onClickFilter = () => {
+  const filtered = applyFilter(originData, searchCond);
+  setRowData(filtered);
+};
