@@ -1,4 +1,4 @@
-const isEmptyCond = value =>
+ㅑconst isEmptyCond = value =>
   value === null ||
   value === undefined ||
   value === '' ||
@@ -45,3 +45,39 @@ const onClickFilter = () => {
   const filtered = applyFilter(originData, searchCond);
   setRowData(filtered);
 };
+
+
+
+/**
+ * 예)
+ * input:
+ *   codea: "a,b"
+ *   codeb: "에이,비"
+ * output:
+ *   { a: "에이", b: "비" }
+ */
+function makeKeyValueMap(engCsv, korCsv) {
+  const keys = String(engCsv ?? "")
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const values = String(korCsv ?? "")
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const result = {};
+  const len = Math.min(keys.length, values.length);
+
+  for (let i = 0; i < len; i++) {
+    result[keys[i]] = values[i];
+  }
+
+  return result;
+}
+
+// 사용 예시
+const codea = "a,b";
+const codeb = "에이,비";
+console.log(makeKeyValueMap(codea, codeb)); // { a: '에이', b: '비' }
