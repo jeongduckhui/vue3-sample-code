@@ -1,3 +1,20 @@
+function convertToKoreanSummary(codeMapByColumn) {
+  const result = [];
+
+  Object.entries(codeMapByColumn).forEach(([column, codeMap]) => {
+    const korValues = Object.values(codeMap).join(',');
+
+    result.push({
+      key: column,
+      value: korValues
+    });
+  });
+
+  return result;
+}
+
+
+
 function makeKeyValueMapByColumn(list) {
   const result = {};
 
@@ -112,4 +129,5 @@ function makeKeyValueMap(engCsv, korCsv) {
 const codea = "a,b";
 const codeb = "에이,비";
 console.log(makeKeyValueMap(codea, codeb)); // { a: '에이', b: '비' }
+
 
