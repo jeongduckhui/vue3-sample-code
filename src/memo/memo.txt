@@ -1,133 +1,83 @@
-function convertToKoreanSummary(codeMapByColumn) {
-  const result = [];
+groups가 Map<String, List<Map<String, Object>>> 인 경우
 
-  Object.entries(codeMapByColumn).forEach(([column, codeMap]) => {
-    const korValues = Object.values(codeMap).join(',');
+groups.forEach((groupCode, valueList) -> {
+    result.put(groupCode, cache.getOrDefault(groupCode, List.of()));
+});
 
-    result.push({
-      key: column,
-      value: korValues
-    });
-  });
+key(String) 만 필요
+groups.keySet().forEach(groupCode ->
+    result.put(groupCode, cache.getOrDefault(groupCode, List.of()))
+);
 
-  return result;
+------------------------------------------------------------
+
+roups가 List<Map<String, Object>> 인 경우
+
+groups.forEach(groupMap -> {
+    Object code = groupMap.get("groupCode");
+    if (code instanceof String groupCode) {
+        result.put(groupCode, cache.getOrDefault(groupCode, List.of()));
+    }
+});
+
+groups.forEach(groupMap -> {
+    String groupCode = (String) groupMap.get("groupCode");
+    result.put(groupCode, cache.getOrDefault(groupCode, List.of()));
+});
+
+------------------------------------------------------------
+
+groups가 Map<String, Object> 인 경우
+
+groups.forEach((groupCode, value) -> {
+    result.put(groupCode, cache.getOrDefault(groupCode, List.of()));
+});
+
+key만 쓸 경우
+for (String groupCode : groups.keySet()) {
+    result.put(groupCode, cache.getOrDefault(groupCode, List.of()));
 }
 
+===========================================================
 
-
-function makeKeyValueMapByColumn(list) {
-  const result = {};
-
-  list.forEach(({ COLUMN, ENGVAL, KORVAL }) => {
-    const keys = String(ENGVAL ?? '')
-      .split(',')
-      .map(v => v.trim())
-      .filter(Boolean);
-
-    const values = String(KORVAL ?? '')
-      .split(',')
-      .map(v => v.trim())
-      .filter(Boolean);
-
-    const map = {};
-    const len = Math.min(keys.length, values.length);
-
-    for (let i = 0; i < len; i++) {
-      map[keys[i]] = values[i];
+public static <T> List<String> extractGroupCodes(
+        Collection<T> source,
+        Function<T, String> extractor
+) {
+    if (source == null || source.isEmpty()) {
+        return List.of();
     }
 
-    result[COLUMN] = map;
-  });
-
-  return result;
+    return source.stream()
+            .map(extractor)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
 }
+------
+List<String>
+List<String> groupCodes =
+    extractGroupCodes(groups, Function.identity());
+
+List<Map<String, Object>>
+List<String> groupCodes =
+    extractGroupCodes(groups, m -> (String) m.get("groupCode"));
+
+List<CommonCode>
+List<String> groupCodes =
+    extractGroupCodes(commonCodes, CommonCode::getGroupCode);
+
+Map<String, List<Map<String, Object>>>
+List<String> groupCodes =
+    extractGroupCodes(groups.keySet(), Function.identity());
+
+----------------------------------
+
+List<String> groupCodes = extractGroupCodes(groups);
+groupCodes.forEach(code ->
+    result.put(code, cache.getOrDefault(code, List.of()))
+);
 
 
-
-
-
-ㅑconst isEmptyCond = value =>
-  value === null ||
-  value === undefined ||
-  value === '' ||
-  value === false;
-
-const parseMultiValue = value =>
-  typeof value === 'string'
-    ? value.split(',').map(v => v.trim()).filter(Boolean)
-    : [];
-
-const filterHandlers = {
-  // 멀티 셀렉트 (a,b,c)
-  status: (row, value) => {
-    const values = parseMultiValue(value);
-    return values.includes(row.status);
-  },
-
-  // 단일 선택
-  type: (row, value) =>
-    row.type === value,
-
-  // boolean 조건
-  vipOnly: (row, value) =>
-    value ? row.vipYn === 'Y' : true,
-};
-
-
-const applyFilter = (data, searchCond) => {
-  return data.filter(row =>
-    Object.entries(searchCond).every(([key, value]) => {
-      // 조건 미선택 → 통과
-      if (isEmptyCond(value)) return true;
-
-      const handler = filterHandlers[key];
-      if (!handler) return true; // 정의 안 된 조건 무시
-
-      return handler(row, value);
-    })
-  );
-};
-
-
-const onClickFilter = () => {
-  const filtered = applyFilter(originData, searchCond);
-  setRowData(filtered);
-};
-
-
-
-/**
- * 예)
- * input:
- *   codea: "a,b"
- *   codeb: "에이,비"
- * output:
- *   { a: "에이", b: "비" }
- */
-function makeKeyValueMap(engCsv, korCsv) {
-  const keys = String(engCsv ?? "")
-    .split(",")
-    .map(s => s.trim())
-    .filter(Boolean);
-
-  const values = String(korCsv ?? "")
-    .split(",")
-    .map(s => s.trim())
-    .filter(Boolean);
-
-  const result = {};
-  const len = Math.min(keys.length, values.length);
-
-  for (let i = 0; i < len; i++) {
-    result[keys[i]] = values[i];
-  }
-
-  return result;
-}
-
-// 사용 예시
-const codea = "a,b";
-const codeb = "에이,비";
-console.log(makeKeyValueMap(codea, codeb)); // { a: '에이', b: '비' }
 
 
