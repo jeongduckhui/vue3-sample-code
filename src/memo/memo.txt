@@ -133,10 +133,14 @@ public class SearchConditionCodeCache {
     }
 
     /**
-     * @param groupCode code_a, code_b ...
+     * 화면 ID + 공통코드 키 기반 캐시 조회
+     *
+     * @param screenId  화면 ID (예: SEARCH001)
+     * @param groupCode 공통코드 키 (예: code_a)
      * @param loader    DB 조회 로직
      */
     public List<Map<String, Object>> getOrLoad(
+            String screenId,
             String groupCode,
             Supplier<List<Map<String, Object>>> loader
     ) {
@@ -145,12 +149,13 @@ public class SearchConditionCodeCache {
             return loader.get();
         }
 
+        String cacheKey = buildCacheKey(screenId, groupCode);
         long now = System.currentTimeMillis();
-        CacheEntry entry = cache.get(groupCode);
 
-        // 캐시 없음 또는 TTL 만료
+        CacheEntry entry = cache.get(cacheKey);
+
         if (entry == null || entry.isExpired(now)) {
-            return cache.compute(groupCode, (key, oldEntry) -> {
+            return cache.compute(cacheKey, (key, oldEntry) -> {
                 if (oldEntry == null || oldEntry.isExpired(now)) {
                     return new CacheEntry(loader.get(), now + ttlMillis);
                 }
@@ -162,14 +167,14 @@ public class SearchConditionCodeCache {
     }
 
     /**
-     * 운영/테스트용 캐시 전체 초기화
+     * 캐시키 생성 책임은 Cache에만 둔다
      */
-    public void clear() {
-        cache.clear();
+    private String buildCacheKey(String screenId, String groupCode) {
+        return groupCode + "_" + screenId;
     }
 
-    public int size() {
-        return cache.size();
+    public void clear() {
+        cache.clear();
     }
 
     /* ================= 내부 캐시 엔트리 ================= */
@@ -183,6 +188,7 @@ public class SearchConditionCodeCache {
         }
     }
 }
+
 
 ---------------------------------------------------------------------------------------------
 package com.example.demo.business.search.service;
@@ -200,12 +206,13 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SearchScreenService {
 
+    private static final String SCREEN_ID = "SEARCH001";
+
     private final SearchConditionCodeCache cache;
     private final CommonCodeMapper commonCodeMapper;
 
     public Map<String, List<Map<String, Object>>> loadSearchConditionCodes() {
 
-        // 실제로는 약 40개
         List<String> groupCodes = List.of(
             "code_a",
             "code_b",
@@ -218,6 +225,7 @@ public class SearchScreenService {
             result.put(
                 groupCode,
                 cache.getOrLoad(
+                    SCREEN_ID,          // Service 내부 상수
                     groupCode,
                     () -> commonCodeMapper.selectByGroupCode(groupCode)
                 )
@@ -227,5 +235,6 @@ public class SearchScreenService {
         return result;
     }
 }
+
 
 
