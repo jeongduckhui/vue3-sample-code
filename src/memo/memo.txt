@@ -90,9 +90,17 @@ if (isExpired()) {
 # 조회조건 화면 전용 공통코드 캐시 설정
 # =====================================
 
+# =====================================
+# 조회조건 화면 전용 공통코드 캐시 설정
+# =====================================
+
+# 캐시 사용 여부 (운영 안전 스위치)
+search.condition.cache.enabled=true
+
 # TTL (분 단위)
 # 운영 기본: 24시간 = 1440분
 search.condition.cache.ttl-minutes=1440
+
 # 테스트용 1분
 search.condition.cache.ttl-minutes=1
 
@@ -110,14 +118,17 @@ import java.util.function.Supplier;
 @Component
 public class SearchConditionCodeCache {
 
+    private final boolean cacheEnabled;
     private final long ttlMillis;
 
     private final ConcurrentHashMap<String, CacheEntry> cache =
             new ConcurrentHashMap<>();
 
     public SearchConditionCodeCache(
+            @Value("${search.condition.cache.enabled:true}") boolean cacheEnabled,
             @Value("${search.condition.cache.ttl-minutes:1440}") long ttlMinutes
     ) {
+        this.cacheEnabled = cacheEnabled;
         this.ttlMillis = ttlMinutes * 60 * 1000;
     }
 
@@ -129,8 +140,12 @@ public class SearchConditionCodeCache {
             String groupCode,
             Supplier<List<Map<String, Object>>> loader
     ) {
-        long now = System.currentTimeMillis();
+        // 캐시 OFF → 바로 DB 조회
+        if (!cacheEnabled) {
+            return loader.get();
+        }
 
+        long now = System.currentTimeMillis();
         CacheEntry entry = cache.get(groupCode);
 
         // 캐시 없음 또는 TTL 만료
@@ -146,6 +161,9 @@ public class SearchConditionCodeCache {
         return entry.value();
     }
 
+    /**
+     * 운영/테스트용 캐시 전체 초기화
+     */
     public void clear() {
         cache.clear();
     }
@@ -165,6 +183,7 @@ public class SearchConditionCodeCache {
         }
     }
 }
+
 ---------------------------------------------------------------------------------------------
 package com.example.demo.business.search.service;
 
@@ -208,4 +227,5 @@ public class SearchScreenService {
         return result;
     }
 }
+
 
