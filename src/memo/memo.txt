@@ -84,3 +84,128 @@ groupCodes.forEach(code ->
 if (isExpired()) {
     여기에서 cache.clear(); 한번 해줘야 함
 }
+
+#############################################################################################
+# =====================================
+# 조회조건 화면 전용 공통코드 캐시 설정
+# =====================================
+
+# TTL (분 단위)
+# 운영 기본: 24시간 = 1440분
+search.condition.cache.ttl-minutes=1440
+# 테스트용 1분
+search.condition.cache.ttl-minutes=1
+
+-----------------------------------------------------------------------------------------
+package com.example.demo.business.search.cache;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
+
+@Component
+public class SearchConditionCodeCache {
+
+    private final long ttlMillis;
+
+    private final ConcurrentHashMap<String, CacheEntry> cache =
+            new ConcurrentHashMap<>();
+
+    public SearchConditionCodeCache(
+            @Value("${search.condition.cache.ttl-minutes:1440}") long ttlMinutes
+    ) {
+        this.ttlMillis = ttlMinutes * 60 * 1000;
+    }
+
+    /**
+     * @param groupCode code_a, code_b ...
+     * @param loader    DB 조회 로직
+     */
+    public List<Map<String, Object>> getOrLoad(
+            String groupCode,
+            Supplier<List<Map<String, Object>>> loader
+    ) {
+        long now = System.currentTimeMillis();
+
+        CacheEntry entry = cache.get(groupCode);
+
+        // 캐시 없음 또는 TTL 만료
+        if (entry == null || entry.isExpired(now)) {
+            return cache.compute(groupCode, (key, oldEntry) -> {
+                if (oldEntry == null || oldEntry.isExpired(now)) {
+                    return new CacheEntry(loader.get(), now + ttlMillis);
+                }
+                return oldEntry;
+            }).value();
+        }
+
+        return entry.value();
+    }
+
+    public void clear() {
+        cache.clear();
+    }
+
+    public int size() {
+        return cache.size();
+    }
+
+    /* ================= 내부 캐시 엔트리 ================= */
+
+    private record CacheEntry(
+            List<Map<String, Object>> value,
+            long expireAt
+    ) {
+        boolean isExpired(long now) {
+            return expireAt < now;
+        }
+    }
+}
+---------------------------------------------------------------------------------------------
+package com.example.demo.business.search.service;
+
+import com.example.demo.business.search.cache.SearchConditionCodeCache;
+import com.example.demo.business.search.mapper.CommonCodeMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class SearchScreenService {
+
+    private final SearchConditionCodeCache cache;
+    private final CommonCodeMapper commonCodeMapper;
+
+    public Map<String, List<Map<String, Object>>> loadSearchConditionCodes() {
+
+        // 실제로는 약 40개
+        List<String> groupCodes = List.of(
+            "code_a",
+            "code_b",
+            "code_c"
+        );
+
+        Map<String, List<Map<String, Object>>> result = new LinkedHashMap<>();
+
+        for (String groupCode : groupCodes) {
+            result.put(
+                groupCode,
+                cache.getOrLoad(
+                    groupCode,
+                    () -> commonCodeMapper.selectByGroupCode(groupCode)
+                )
+            );
+        }
+
+        return result;
+    }
+}
+
