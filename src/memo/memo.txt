@@ -79,5 +79,8 @@ groupCodes.forEach(code ->
 );
 
 
+============================
 
-
+if (isExpired()) {
+    여기에서 cache.clear(); 한번 해줘야 함
+}
