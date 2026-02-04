@@ -1,173 +1,81 @@
 
-// src/hooks/useUiRenderTime.js
-import { useEffect, useRef } from 'react';
+const ParentScreen = () => {
+  const [rowData, setRowData] = useState([]);
+  const [traceInfo, setTraceInfo] = useState(null);
 
-export function useUiRenderTime(deps = []) {
-  const fetchEndRef = useRef(null);
-  const resolveRef = useRef(null);
+  const { markFetchEnd, uiTimeMs } =
+    useUiRenderTime([rowData.length]);
 
-  // axios 응답 시점 등록
-  const markFetchEnd = time => {
-    fetchEndRef.current = time;
-  };
-
-  // UI 렌더 완료를 기다리는 Promise
-  const waitForUiRendered = () => {
-    return new Promise(resolve => {
-      resolveRef.current = resolve;
+  const loadData = async () => {
+    const res = await fetchWithUiTrace({
+      fetchFn: () => axios.get('/api/data'),
+      markFetchEnd,
     });
+
+    setRowData(res.data.rows);
+
+    setTraceInfo(res.traceBase); // uiTime은 아직 없음
   };
 
-  // deps 변경 → UI 렌더 완료 시점
+  // 🔥 uiTime이 계산된 "후"에 합성
   useEffect(() => {
-    if (!fetchEndRef.current || !resolveRef.current) return;
+    if (!traceInfo || uiTimeMs == null) return;
 
-    const uiTimeMs = performance.now() - fetchEndRef.current;
+    setTraceInfo(prev => ({
+      ...prev,
+      uiTimeMs,
+      totalTimeMs:
+        prev.networkTimeMs +
+        prev.serverTxTimeMs +
+        uiTimeMs,
+    }));
+  }, [uiTimeMs]);
 
-    resolveRef.current(uiTimeMs);
-    resolveRef.current = null;
-  }, deps);
-
-  return {
-    markFetchEnd,
-    waitForUiRendered,
-  };
-}
+  return <TracePopup traceInfo={traceInfo} />;
+};
 
 
-
-// src/utils/fetchWithUiTrace.js
 export async function fetchWithUiTrace({
-  fetchFn,            // () => axios.get/post(...)
-  markFetchEnd,       // from useUiRenderTime
-  waitForUiRendered,  // from useUiRenderTime
+  fetchFn,
+  markFetchEnd,
 }) {
-  // 1️⃣ axios 호출 시작
   const fetchStart = performance.now();
-
-  // 2️⃣ axios 호출
   const res = await fetchFn();
-
-  // 3️⃣ axios 응답 수신
   const fetchEnd = performance.now();
-  const networkTimeMs = fetchEnd - fetchStart;
 
-  // UI 시간 기준점 등록
   markFetchEnd(fetchEnd);
 
-  // 4️⃣ 백엔드 트랜잭션 시간 추출
-  const serverTxTimeMs =
-    res.data?.trace?.transactionTimeMs ?? 0;
-
-  // 5️⃣ UI 렌더 완료 대기
-  const uiTimeMs = await waitForUiRendered();
-
-  // 6️⃣ 총 소요 시간 계산
-  const totalTimeMs =
-    networkTimeMs + serverTxTimeMs + uiTimeMs;
-
-  // 7️⃣ 가공된 trace 정보 재주입
   return {
     ...res,
-    trace: {
-      ...res.data.trace,
-      networkTimeMs,
-      serverTxTimeMs,
-      uiTimeMs,
-      totalTimeMs,
+    traceBase: {
+      networkTimeMs: fetchEnd - fetchStart,
+      serverTxTimeMs: res.data?.trace?.transactionTimeMs ?? 0,
     },
   };
 }
 
 
+// useUiRenderTime.js
+import { useEffect, useRef, useState } from 'react';
 
-// TracePopup.jsx
-const TracePopup = ({ traceInfo }) => {
-  return (
-    <div>
-      <div>네트워크: {traceInfo.networkTimeMs}</div>
-      <div>서버Tx: {traceInfo.serverTxTimeMs}</div>
-      <div>UI: {traceInfo.uiTimeMs}</div>
-      <div>총소요: {traceInfo.totalTimeMs}</div>
-    </div>
-  );
-};
+export function useUiRenderTime(deps = []) {
+  const fetchEndRef = useRef(null);
+  const [uiTimeMs, setUiTimeMs] = useState(null);
 
-
-
-
-// src/screens/ParentScreen.jsx
-import React, { useState } from 'react';
-import axios from 'axios';
-import { useTraceQuery } from '../hooks/useTraceQuery';
-import TracePopup from '../components/TracePopup';
-
-const ParentScreen = () => {
-  const [rowData, setRowData] = useState([]);
-
-  const { data, traceInfo, execute } = useTraceQuery({
-    depsForUiRender: [rowData],
-  });
-
-  const loadData = async () => {
-    const searchParam = {
-      customerId: 'C001',
-      fromDate: '2026-01-01',
-      toDate: '2026-01-31',
-    };
-
-    const res = await execute(() =>
-      axios.get('/api/data', { params: searchParam })
-    );
-
-    setRowData(res.data.rows);
+  const markFetchEnd = time => {
+    fetchEndRef.current = time;
+    setUiTimeMs(null); // 초기화
   };
 
-  return (
-    <>
-      <button onClick={loadData}>조회</button>
+  useEffect(() => {
+    if (!fetchEndRef.current) return;
 
-      {traceInfo && <TracePopup traceInfo={traceInfo} />}
-    </>
-  );
-};
-
-export default ParentScreen;
-
-
-
-
-
-
-// src/hooks/useTraceQuery.js
-import { useState } from 'react';
-import { useUiRenderTime } from './useUiRenderTime';
-import { fetchWithUiTrace } from '../utils/fetchWithUiTrace';
-
-export function useTraceQuery({ depsForUiRender = [] } = {}) {
-  const [data, setData] = useState(null);
-  const [traceInfo, setTraceInfo] = useState(null);
-
-  const { markFetchEnd, waitForUiRendered } =
-    useUiRenderTime(depsForUiRender);
-
-  const execute = async fetchFn => {
-    const res = await fetchWithUiTrace({
-      fetchFn,
-      markFetchEnd,
-      waitForUiRendered,
-    });
-
-    setData(res.data);
-    setTraceInfo(res.trace);
-
-    return res; // 필요하면 호출부에서도 사용 가능
-  };
+    const elapsed = performance.now() - fetchEndRef.current;
+    setUiTimeMs(elapsed);
+  }, deps);
 
   return {
-    data,
-    traceInfo,
-    execute,
+    markFetchEnd,
+    uiTimeMs,
   };
 }
-
