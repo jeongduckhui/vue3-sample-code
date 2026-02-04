@@ -1,4 +1,86 @@
 
+// src/hooks/useUiRenderTime.js
+import { useEffect, useRef } from 'react';
+
+export function useUiRenderTime(deps = []) {
+  const fetchEndRef = useRef(null);
+  const resolveRef = useRef(null);
+
+  // axios 응답 시점 등록
+  const markFetchEnd = time => {
+    fetchEndRef.current = time;
+  };
+
+  // UI 렌더 완료를 기다리는 Promise
+  const waitForUiRendered = () => {
+    return new Promise(resolve => {
+      resolveRef.current = resolve;
+    });
+  };
+
+  // deps 변경 → UI 렌더 완료 시점
+  useEffect(() => {
+    if (!fetchEndRef.current || !resolveRef.current) return;
+
+    const uiTimeMs = performance.now() - fetchEndRef.current;
+
+    resolveRef.current(uiTimeMs);
+    resolveRef.current = null;
+  }, deps);
+
+  return {
+    markFetchEnd,
+    waitForUiRendered,
+  };
+}
+
+
+
+// src/utils/fetchWithUiTrace.js
+export async function fetchWithUiTrace({
+  fetchFn,            // () => axios.get/post(...)
+  markFetchEnd,       // from useUiRenderTime
+  waitForUiRendered,  // from useUiRenderTime
+}) {
+  // 1️⃣ axios 호출 시작
+  const fetchStart = performance.now();
+
+  // 2️⃣ axios 호출
+  const res = await fetchFn();
+
+  // 3️⃣ axios 응답 수신
+  const fetchEnd = performance.now();
+  const networkTimeMs = fetchEnd - fetchStart;
+
+  // UI 시간 기준점 등록
+  markFetchEnd(fetchEnd);
+
+  // 4️⃣ 백엔드 트랜잭션 시간 추출
+  const serverTxTimeMs =
+    res.data?.trace?.transactionTimeMs ?? 0;
+
+  // 5️⃣ UI 렌더 완료 대기
+  const uiTimeMs = await waitForUiRendered();
+
+  // 6️⃣ 총 소요 시간 계산
+  const totalTimeMs =
+    networkTimeMs + serverTxTimeMs + uiTimeMs;
+
+  // 7️⃣ 가공된 trace 정보 재주입
+  return {
+    ...res,
+    trace: {
+      ...res.data.trace,
+      networkTimeMs,
+      serverTxTimeMs,
+      uiTimeMs,
+      totalTimeMs,
+    },
+  };
+}
+
+
+
 // TracePopup.jsx
 const TracePopup = ({ traceInfo }) => {
   return (
@@ -88,3 +170,4 @@ export function useTraceQuery({ depsForUiRender = [] } = {}) {
     execute,
   };
 }
+
