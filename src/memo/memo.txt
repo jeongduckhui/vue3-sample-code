@@ -1,240 +1,90 @@
-groups가 Map<String, List<Map<String, Object>>> 인 경우
 
-groups.forEach((groupCode, valueList) -> {
-    result.put(groupCode, cache.getOrDefault(groupCode, List.of()));
-});
+// TracePopup.jsx
+const TracePopup = ({ traceInfo }) => {
+  return (
+    <div>
+      <div>네트워크: {traceInfo.networkTimeMs}</div>
+      <div>서버Tx: {traceInfo.serverTxTimeMs}</div>
+      <div>UI: {traceInfo.uiTimeMs}</div>
+      <div>총소요: {traceInfo.totalTimeMs}</div>
+    </div>
+  );
+};
 
-key(String) 만 필요
-groups.keySet().forEach(groupCode ->
-    result.put(groupCode, cache.getOrDefault(groupCode, List.of()))
-);
 
-------------------------------------------------------------
 
-roups가 List<Map<String, Object>> 인 경우
 
-groups.forEach(groupMap -> {
-    Object code = groupMap.get("groupCode");
-    if (code instanceof String groupCode) {
-        result.put(groupCode, cache.getOrDefault(groupCode, List.of()));
-    }
-});
+// src/screens/ParentScreen.jsx
+import React, { useState } from 'react';
+import axios from 'axios';
+import { useTraceQuery } from '../hooks/useTraceQuery';
+import TracePopup from '../components/TracePopup';
 
-groups.forEach(groupMap -> {
-    String groupCode = (String) groupMap.get("groupCode");
-    result.put(groupCode, cache.getOrDefault(groupCode, List.of()));
-});
+const ParentScreen = () => {
+  const [rowData, setRowData] = useState([]);
 
-------------------------------------------------------------
+  const { data, traceInfo, execute } = useTraceQuery({
+    depsForUiRender: [rowData],
+  });
 
-groups가 Map<String, Object> 인 경우
+  const loadData = async () => {
+    const searchParam = {
+      customerId: 'C001',
+      fromDate: '2026-01-01',
+      toDate: '2026-01-31',
+    };
 
-groups.forEach((groupCode, value) -> {
-    result.put(groupCode, cache.getOrDefault(groupCode, List.of()));
-});
+    const res = await execute(() =>
+      axios.get('/api/data', { params: searchParam })
+    );
 
-key만 쓸 경우
-for (String groupCode : groups.keySet()) {
-    result.put(groupCode, cache.getOrDefault(groupCode, List.of()));
+    setRowData(res.data.rows);
+  };
+
+  return (
+    <>
+      <button onClick={loadData}>조회</button>
+
+      {traceInfo && <TracePopup traceInfo={traceInfo} />}
+    </>
+  );
+};
+
+export default ParentScreen;
+
+
+
+
+
+
+// src/hooks/useTraceQuery.js
+import { useState } from 'react';
+import { useUiRenderTime } from './useUiRenderTime';
+import { fetchWithUiTrace } from '../utils/fetchWithUiTrace';
+
+export function useTraceQuery({ depsForUiRender = [] } = {}) {
+  const [data, setData] = useState(null);
+  const [traceInfo, setTraceInfo] = useState(null);
+
+  const { markFetchEnd, waitForUiRendered } =
+    useUiRenderTime(depsForUiRender);
+
+  const execute = async fetchFn => {
+    const res = await fetchWithUiTrace({
+      fetchFn,
+      markFetchEnd,
+      waitForUiRendered,
+    });
+
+    setData(res.data);
+    setTraceInfo(res.trace);
+
+    return res; // 필요하면 호출부에서도 사용 가능
+  };
+
+  return {
+    data,
+    traceInfo,
+    execute,
+  };
 }
-
-===========================================================
-
-public static <T> List<String> extractGroupCodes(
-        Collection<T> source,
-        Function<T, String> extractor
-) {
-    if (source == null || source.isEmpty()) {
-        return List.of();
-    }
-
-    return source.stream()
-            .map(extractor)
-            .filter(Objects::nonNull)
-            .distinct()
-            .toList();
-}
-------
-List<String>
-List<String> groupCodes =
-    extractGroupCodes(groups, Function.identity());
-
-List<Map<String, Object>>
-List<String> groupCodes =
-    extractGroupCodes(groups, m -> (String) m.get("groupCode"));
-
-List<CommonCode>
-List<String> groupCodes =
-    extractGroupCodes(commonCodes, CommonCode::getGroupCode);
-
-Map<String, List<Map<String, Object>>>
-List<String> groupCodes =
-    extractGroupCodes(groups.keySet(), Function.identity());
-
-----------------------------------
-
-List<String> groupCodes = extractGroupCodes(groups);
-groupCodes.forEach(code ->
-    result.put(code, cache.getOrDefault(code, List.of()))
-);
-
-
-============================
-
-if (isExpired()) {
-    여기에서 cache.clear(); 한번 해줘야 함
-}
-
-#############################################################################################
-# =====================================
-# 조회조건 화면 전용 공통코드 캐시 설정
-# =====================================
-
-# =====================================
-# 조회조건 화면 전용 공통코드 캐시 설정
-# =====================================
-
-# 캐시 사용 여부 (운영 안전 스위치)
-search.condition.cache.enabled=true
-
-# TTL (분 단위)
-# 운영 기본: 24시간 = 1440분
-search.condition.cache.ttl-minutes=1440
-
-# 테스트용 1분
-search.condition.cache.ttl-minutes=1
-
------------------------------------------------------------------------------------------
-package com.example.demo.business.search.cache;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
-
-@Component
-public class SearchConditionCodeCache {
-
-    private final boolean cacheEnabled;
-    private final long ttlMillis;
-
-    private final ConcurrentHashMap<String, CacheEntry> cache =
-            new ConcurrentHashMap<>();
-
-    public SearchConditionCodeCache(
-            @Value("${search.condition.cache.enabled:true}") boolean cacheEnabled,
-            @Value("${search.condition.cache.ttl-minutes:1440}") long ttlMinutes
-    ) {
-        this.cacheEnabled = cacheEnabled;
-        this.ttlMillis = ttlMinutes * 60 * 1000;
-    }
-
-    /**
-     * 화면 ID + 공통코드 키 기반 캐시 조회
-     *
-     * @param screenId  화면 ID (예: SEARCH001)
-     * @param groupCode 공통코드 키 (예: code_a)
-     * @param loader    DB 조회 로직
-     */
-    public List<Map<String, Object>> getOrLoad(
-            String screenId,
-            String groupCode,
-            Supplier<List<Map<String, Object>>> loader
-    ) {
-        // 캐시 OFF → 바로 DB 조회
-        if (!cacheEnabled) {
-            return loader.get();
-        }
-
-        String cacheKey = buildCacheKey(screenId, groupCode);
-        long now = System.currentTimeMillis();
-
-        CacheEntry entry = cache.get(cacheKey);
-
-        if (entry == null || entry.isExpired(now)) {
-            return cache.compute(cacheKey, (key, oldEntry) -> {
-                if (oldEntry == null || oldEntry.isExpired(now)) {
-                    return new CacheEntry(loader.get(), now + ttlMillis);
-                }
-                return oldEntry;
-            }).value();
-        }
-
-        return entry.value();
-    }
-
-    /**
-     * 캐시키 생성 책임은 Cache에만 둔다
-     */
-    private String buildCacheKey(String screenId, String groupCode) {
-        return groupCode + "_" + screenId;
-    }
-
-    public void clear() {
-        cache.clear();
-    }
-
-    /* ================= 내부 캐시 엔트리 ================= */
-
-    private record CacheEntry(
-            List<Map<String, Object>> value,
-            long expireAt
-    ) {
-        boolean isExpired(long now) {
-            return expireAt < now;
-        }
-    }
-}
-
-
----------------------------------------------------------------------------------------------
-package com.example.demo.business.search.service;
-
-import com.example.demo.business.search.cache.SearchConditionCodeCache;
-import com.example.demo.business.search.mapper.CommonCodeMapper;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-@Service
-@RequiredArgsConstructor
-public class SearchScreenService {
-
-    private static final String SCREEN_ID = "SEARCH001";
-
-    private final SearchConditionCodeCache cache;
-    private final CommonCodeMapper commonCodeMapper;
-
-    public Map<String, List<Map<String, Object>>> loadSearchConditionCodes() {
-
-        List<String> groupCodes = List.of(
-            "code_a",
-            "code_b",
-            "code_c"
-        );
-
-        Map<String, List<Map<String, Object>>> result = new LinkedHashMap<>();
-
-        for (String groupCode : groupCodes) {
-            result.put(
-                groupCode,
-                cache.getOrLoad(
-                    SCREEN_ID,          // Service 내부 상수
-                    groupCode,
-                    () -> commonCodeMapper.selectByGroupCode(groupCode)
-                )
-            );
-        }
-
-        return result;
-    }
-}
-
-
-
