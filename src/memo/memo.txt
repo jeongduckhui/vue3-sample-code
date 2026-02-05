@@ -1,65 +1,122 @@
+/**
+ * 숫자 포맷 유틸
+ *
+ * @param {number|string|null|undefined} value
+ * @param {Object} options
+ * @param {boolean} options.useComma - 천단위 콤마 여부
+ * @param {boolean} options.showDecimal - 소수점 표시 여부
+ * @param {number} options.decimalPlaces - 소수점 자릿수
+ * @param {'minus' | 'parentheses'} options.negativeStyle - 음수 표현 방식
+ * @returns {string}
+ */
+export function formatNumber(
+  value,
+  {
+    useComma = true,
+    showDecimal = false,
+    decimalPlaces = 0,
+    negativeStyle = 'minus',
+  } = {}
+) {
+  if (value === null || value === undefined || value === '') return '';
 
-api.onRowHeightChanged();
+  const num = Number(value);
+  if (Number.isNaN(num)) return '';
 
+  const isNegative = num < 0;
+  const absNum = Math.abs(num);
 
+  let formatted;
+
+  if (showDecimal) {
+    formatted = absNum.toFixed(decimalPlaces);
+  } else {
+    formatted = Math.trunc(absNum).toString();
+  }
+
+  if (useComma) {
+    const [integerPart, decimalPart] = formatted.split('.');
+
+    const commaInteger = integerPart.replace(
+      /\B(?=(\d{3})+(?!\d))/g,
+      ','
+    );
+
+    formatted =
+      decimalPart !== undefined
+        ? `${commaInteger}.${decimalPart}`
+        : commaInteger;
+  }
+
+  // 음수 스타일 처리
+  if (isNegative) {
+    if (negativeStyle === 'parentheses') {
+      return `(${formatted})`;
+    }
+    return `-${formatted}`;
+  }
+
+  return formatted;
+}
+--------------------------------------------------
+formatNumber(-1234567);
+// "-1,234,567"
+
+formatNumber(-1234567.891, {
+  showDecimal: true,
+  decimalPlaces: 2,
+});
+// "-1,234,567.89"
+
+formatNumber(-1234567.891, {
+  showDecimal: true,
+  decimalPlaces: 2,
+  negativeStyle: 'parentheses',
+});
+// "(1,234,567.89)"
+
+formatNumber(-1234567, {
+  useComma: false,
+});
+// "-1234567"
+----------------------------------------------------------------------
+/**
+ * AG Grid valueFormatter 전용 숫자 포맷 wrapper
+ *
+ * @param {Object} options - formatNumber 옵션
+ * @returns {(params: any) => string}
+ */
+export function numberFormatter(options = {}) {
+  return (params) => {
+    if (!params) return '';
+
+    const { value, node } = params;
+
+    // 그룹 행 / 집계 행 방어
+    if (node?.group && value == null) return '';
+
+    return formatNumber(value, options);
+  };
+}
+---------------------------------------------------------
 
 const columnDefs = [
   {
-    headerName: '내용',
-    field: 'content',
-    cellRenderer: RowResizeCellRenderer,
+    headerName: '금액',
+    field: 'amount',
+    valueFormatter: numberFormatter({
+      useComma: true,
+      showDecimal: true,
+      decimalPlaces: 2,
+      negativeStyle: 'minus',
+    }),
+  },
+  {
+    headerName: '수량',
+    field: 'qty',
+    valueFormatter: numberFormatter({
+      useComma: true,
+      showDecimal: false,
+    }),
   },
 ];
-
-
-
-import React, { useRef } from 'react';
-
-const RowResizeCellRenderer = (props) => {
-  const startYRef = useRef(0);
-  const startHeightRef = useRef(0);
-
-  const onMouseDown = (e) => {
-    e.preventDefault();
-
-    startYRef.current = e.clientY;
-    startHeightRef.current = props.node.rowHeight;
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  };
-
-  const onMouseMove = (e) => {
-    const diff = e.clientY - startYRef.current;
-    const newHeight = Math.max(24, startHeightRef.current + diff);
-
-    props.api.setRowHeight(props.node, newHeight);
-    props.api.onRowHeightChanged();
-  };
-
-  const onMouseUp = () => {
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-  };
-
-  return (
-    <div style={{ position: 'relative', height: '100%' }}>
-      {props.value}
-
-      <div
-        onMouseDown={onMouseDown}
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 6,
-          cursor: 'row-resize',
-          background: 'transparent',
-        }}
-      />
-    </div>
-  );
-};
-
-export default RowResizeCellRenderer;
