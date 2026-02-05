@@ -1,81 +1,65 @@
 
-const ParentScreen = () => {
-  const [rowData, setRowData] = useState([]);
-  const [traceInfo, setTraceInfo] = useState(null);
+api.onRowHeightChanged();
 
-  const { markFetchEnd, uiTimeMs } =
-    useUiRenderTime([rowData.length]);
 
-  const loadData = async () => {
-    const res = await fetchWithUiTrace({
-      fetchFn: () => axios.get('/api/data'),
-      markFetchEnd,
-    });
 
-    setRowData(res.data.rows);
+const columnDefs = [
+  {
+    headerName: '내용',
+    field: 'content',
+    cellRenderer: RowResizeCellRenderer,
+  },
+];
 
-    setTraceInfo(res.traceBase); // uiTime은 아직 없음
+
+
+import React, { useRef } from 'react';
+
+const RowResizeCellRenderer = (props) => {
+  const startYRef = useRef(0);
+  const startHeightRef = useRef(0);
+
+  const onMouseDown = (e) => {
+    e.preventDefault();
+
+    startYRef.current = e.clientY;
+    startHeightRef.current = props.node.rowHeight;
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   };
 
-  // 🔥 uiTime이 계산된 "후"에 합성
-  useEffect(() => {
-    if (!traceInfo || uiTimeMs == null) return;
+  const onMouseMove = (e) => {
+    const diff = e.clientY - startYRef.current;
+    const newHeight = Math.max(24, startHeightRef.current + diff);
 
-    setTraceInfo(prev => ({
-      ...prev,
-      uiTimeMs,
-      totalTimeMs:
-        prev.networkTimeMs +
-        prev.serverTxTimeMs +
-        uiTimeMs,
-    }));
-  }, [uiTimeMs]);
+    props.api.setRowHeight(props.node, newHeight);
+    props.api.onRowHeightChanged();
+  };
 
-  return <TracePopup traceInfo={traceInfo} />;
+  const onMouseUp = () => {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  };
+
+  return (
+    <div style={{ position: 'relative', height: '100%' }}>
+      {props.value}
+
+      <div
+        onMouseDown={onMouseDown}
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 6,
+          cursor: 'row-resize',
+          background: 'transparent',
+        }}
+      />
+    </div>
+  );
 };
 
-
-export async function fetchWithUiTrace({
-  fetchFn,
-  markFetchEnd,
-}) {
-  const fetchStart = performance.now();
-  const res = await fetchFn();
-  const fetchEnd = performance.now();
-
-  markFetchEnd(fetchEnd);
-
-  return {
-    ...res,
-    traceBase: {
-      networkTimeMs: fetchEnd - fetchStart,
-      serverTxTimeMs: res.data?.trace?.transactionTimeMs ?? 0,
-    },
-  };
-}
-
-
-// useUiRenderTime.js
-import { useEffect, useRef, useState } from 'react';
-
-export function useUiRenderTime(deps = []) {
-  const fetchEndRef = useRef(null);
-  const [uiTimeMs, setUiTimeMs] = useState(null);
-
-  const markFetchEnd = time => {
-    fetchEndRef.current = time;
-    setUiTimeMs(null); // 초기화
-  };
-
-  useEffect(() => {
-    if (!fetchEndRef.current) return;
-
-    const elapsed = performance.now() - fetchEndRef.current;
-    setUiTimeMs(elapsed);
-  }, deps);
-
-  return {
-    markFetchEnd,
-    uiTimeMs,
-  };
-}
+export default RowResizeCellRenderer;
