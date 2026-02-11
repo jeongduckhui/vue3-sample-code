@@ -1,3 +1,107 @@
+import React, { useState } from 'react';
+import axios from 'axios';
+import TraceBoundary from './TraceBoundary';
+import QueryPopup from './QueryPopup';
+
+const ParentScreen = () => {
+  const [rows, setRows] = useState([]);
+  const [traceBase, setTraceBase] = useState(null);
+
+  const loadData = async () => {
+    const searchParam = {
+      customerId: 'C001',
+    };
+
+    const fetchStart = performance.now();
+
+    const res = await axios.get('/api/data', {
+      params: searchParam,
+    });
+
+    const fetchEnd = performance.now();
+
+    setRows(res.data.rows);
+
+    setTraceBase({
+      networkTimeMs: fetchEnd - fetchStart,
+      serverTxTimeMs:
+        res.data?.trace?.transactionTimeMs ?? 0,
+    });
+  };
+
+  return (
+    <>
+      <button onClick={loadData}>조회</button>
+
+      {traceBase && (
+        <TraceBoundary traceBase={traceBase}>
+          <QueryPopup rows={rows} />
+        </TraceBoundary>
+      )}
+    </>
+  );
+};
+
+export default ParentScreen;
+
+
+
+import React, { useEffect, useRef, useState } from 'react';
+
+const TraceBoundary = ({
+  traceBase,   // { networkTimeMs, serverTxTimeMs }
+  children,
+}) => {
+  const [traceInfo, setTraceInfo] = useState(null);
+  const renderStartRef = useRef(null);
+
+  // 1️⃣ 렌더 시작 시점
+  useEffect(() => {
+    renderStartRef.current = performance.now();
+  }, []);
+
+  // 2️⃣ children 렌더 완료 후 UI 시간 계산
+  useEffect(() => {
+    if (!traceBase) return;
+    if (!renderStartRef.current) return;
+
+    const uiTimeMs =
+      performance.now() - renderStartRef.current;
+
+    const totalTimeMs =
+      traceBase.networkTimeMs +
+      traceBase.serverTxTimeMs +
+      uiTimeMs;
+
+    setTraceInfo({
+      ...traceBase,
+      uiTimeMs,
+      totalTimeMs,
+    });
+  }, [traceBase]);
+
+  return (
+    <>
+      {traceInfo && (
+        <div style={{ marginBottom: 12 }}>
+          <div>네트워크(ms): {traceInfo.networkTimeMs.toFixed(1)}</div>
+          <div>서버Tx(ms): {traceInfo.serverTxTimeMs}</div>
+          <div>UI(ms): {traceInfo.uiTimeMs.toFixed(1)}</div>
+          <div>
+            <b>총소요(ms): {traceInfo.totalTimeMs.toFixed(1)}</b>
+          </div>
+        </div>
+      )}
+
+      {children}
+    </>
+  );
+};
+
+export default TraceBoundary;
+
+
+
 // src/hooks/useTraceQuery.js
 import { useEffect, useRef, useState } from 'react';
 
@@ -97,3 +201,4 @@ const ParentScreen = () => {
     </>
   );
 };
+
