@@ -1,175 +1,99 @@
-import React, { useState } from 'react';
-import BigPopup from './BigPopup';
+// src/hooks/useTraceQuery.js
+import { useEffect, useRef, useState } from 'react';
 
-const ParentPage = () => {
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState({ id: '', name: '' });
+export function useTraceQuery({ uiDeps = [] } = {}) {
+  const [data, setData] = useState(null);
+  const [traceInfo, setTraceInfo] = useState(null);
 
-  return (
-    <>
-      <button onClick={() => setOpen(true)}>팝업 열기</button>
+  // 시간 기준점
+  const fetchStartRef = useRef(null);
+  const fetchEndRef = useRef(null);
 
-      {open && (
-        <BigPopup
-          value={value}
-          onChange={setValue}
-          onClose={() => setOpen(false)}
-        />
-      )}
-    </>
-  );
-};
+  // 1️⃣ 조회 실행 (axios 포함)
+  const execute = async fetchFn => {
+    fetchStartRef.current = performance.now();
 
-export default ParentPage;
-=====================================================
-  import React, { useState } from 'react';
-import SmallPopup from './SmallPopup';
+    const res = await fetchFn();
 
-const BigPopup = ({ value, onChange, onClose }) => {
-  const [smallOpen, setSmallOpen] = useState(false);
+    fetchEndRef.current = performance.now();
 
-  return (
-    <div style={{ border: '2px solid #333', padding: 20 }}>
-      <h3>멀티셀렉트 모음 팝업</h3>
+    const networkTimeMs =
+      fetchEndRef.current - fetchStartRef.current;
 
-      {/* 실제로는 30개 */}
-      <div>
-        <label>상품 코드</label>
-        <input
-          readOnly
-          value={value.id}
-          onClick={() => setSmallOpen(true)}
-        />
-      </div>
+    const serverTxTimeMs =
+      res.data?.trace?.transactionTimeMs ?? 0;
 
-      {smallOpen && (
-        <SmallPopup
-          initialValue={value}
-          onApply={onChange}
-          onClose={() => setSmallOpen(false)}
-        />
-      )}
+    // UI 시간은 아직 모름
+    setTraceInfo({
+      networkTimeMs,
+      serverTxTimeMs,
+      uiTimeMs: null,
+      totalTimeMs: null,
+    });
 
-      <br />
-      <button onClick={onClose}>닫기</button>
-    </div>
-  );
-};
+    setData(res.data);
 
-export default BigPopup;
-=======================================================================
-import React, { useEffect, useRef } from 'react';
-import { AgGridReact } from 'ag-grid-react';
+    return res; // 호출부에서도 필요하면 사용
+  };
 
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-alpine.css';
-
-const rowData = [
-  { code: 'M10' },
-  { code: 'C2' },
-  { code: 'D12' },
-  { code: 'H5' },
-  { code: 'P3' },
-];
-
-const columnDefs = [
-  {
-    headerName: '',
-    checkboxSelection: true,
-    width: 50,
-  },
-  { field: 'code', headerName: '코드' },
-];
-
-const SmallPopup = ({ initialValue, onApply, onClose }) => {
-  const gridApiRef = useRef(null);
-
-  // 팝업 열릴 때 기존 선택값 복원
+  // 2️⃣ UI 렌더 완료 시점 감지
   useEffect(() => {
-    if (!gridApiRef.current) return;
+    if (!fetchEndRef.current) return;
+    if (!traceInfo || traceInfo.uiTimeMs != null) return;
 
-    const selectedSet = new Set(
-      initialValue.id
-        .split(',')
-        .map(v => v.trim())
-        .filter(Boolean)
+    const uiTimeMs =
+      performance.now() - fetchEndRef.current;
+
+    setTraceInfo(prev => {
+      if (!prev) return prev;
+
+      const totalTimeMs =
+        prev.networkTimeMs +
+        prev.serverTxTimeMs +
+        uiTimeMs;
+
+      return {
+        ...prev,
+        uiTimeMs,
+        totalTimeMs,
+      };
+    });
+  }, uiDeps);
+
+  return {
+    data,
+    traceInfo,
+    execute,
+  };
+}
+
+
+
+const ParentScreen = () => {
+  const [rowData, setRowData] = useState([]);
+
+  const { data, traceInfo, execute } = useTraceQuery({
+    uiDeps: [rowData.length],
+  });
+
+  const loadData = async () => {
+    const searchParam = {
+      customerId: 'C001',
+      fromDate: '2026-01-01',
+      toDate: '2026-01-31',
+    };
+
+    const res = await execute(() =>
+      axios.get('/api/data', { params: searchParam })
     );
 
-    gridApiRef.current.forEachNode(node => {
-      node.setSelected(selectedSet.has(node.data.code));
-    });
-  }, [initialValue]);
-
-  // 적용 버튼 클릭 (정답 포인트)
-  const handleApply = () => {
-    const rows = gridApiRef.current.getSelectedRows();
-
-    const values = rows.map(r => r.code);
-    const joined = values.join(', ');
-
-    onApply({
-      id: joined,
-      name: joined,
-    });
-
-    onClose();
+    setRowData(res.data.rows);
   };
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 100,
-        left: 100,
-        background: '#fff',
-        border: '2px solid #333',
-        padding: 10,
-      }}
-    >
-      <h4>상품 코드 선택</h4>
-
-      <div
-        className="ag-theme-alpine"
-        style={{ height: 200, width: 250 }}
-      >
-        <AgGridReact
-          rowData={rowData}
-          columnDefs={columnDefs}
-          rowSelection="multiple"
-          onGridReady={params => {
-            gridApiRef.current = params.api;
-          }}
-        />
-      </div>
-
-      <br />
-      <button onClick={handleApply}>적용하기</button>
-      <button onClick={onClose}>취소</button>
-    </div>
+    <>
+      <button onClick={loadData}>조회</button>
+      {traceInfo && <TracePopup traceInfo={traceInfo} />}
+    </>
   );
 };
-
-export default SmallPopup;
-
-=============================================
-
-  🧠 AG-Grid에서 반드시 써야 하는 값
-❌ 쓰면 안 되는 것 (지금 상황)
-selectedNodes 누적 배열
-
-selection 이벤트에서 내려오는 delta 느낌의 값
-
-✅ 써야 하는 것
-gridApi.getSelectedNodes()
-또는
-
-gridApi.getSelectedRows()
-이 두 개는 “현재 체크된 행만” 반환한다.
-
-체크 해제 시
-gridApi.getSelectedRows()
-현재 체크된 행만 반환
-
-누적값 없음
-
-유령 값 없음
