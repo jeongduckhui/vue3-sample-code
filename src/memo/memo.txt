@@ -1,122 +1,130 @@
-/**
- * 숫자 포맷 유틸
- *
- * @param {number|string|null|undefined} value
- * @param {Object} options
- * @param {boolean} options.useComma - 천단위 콤마 여부
- * @param {boolean} options.showDecimal - 소수점 표시 여부
- * @param {number} options.decimalPlaces - 소수점 자릿수
- * @param {'minus' | 'parentheses'} options.negativeStyle - 음수 표현 방식
- * @returns {string}
- */
-export function formatNumber(
-  value,
-  {
-    useComma = true,
-    showDecimal = false,
-    decimalPlaces = 0,
-    negativeStyle = 'minus',
-  } = {}
-) {
-  if (value === null || value === undefined || value === '') return '';
+Nexacro Runtime 전용 브라우저 화면의 iframe 임베디드 불가 사유 및 통합 대안 검토
 
-  const num = Number(value);
-  if (Number.isNaN(num)) return '';
+1. 문서 목적
+본 문서는 차세대 시스템 구축 과정에서 제기된 “레거시 Nexacro 화면의 웹 브라우저 iframe 임베디드” 가능 여부에 대해 기술적 타당성을 검토하고, 불가 사유를 명확히 정리하며, 현실적인 통합 대안을 제시하기 위한 보고 자료이다.
 
-  const isNegative = num < 0;
-  const absNum = Math.abs(num);
+현재 레거시는 Nexacro Runtime 전용 브라우저 기반으로 운영되고 있으며, 차세대는 웹 기반 시스템으로 설계가 검토되고 있다. 이에 따라 두 시스템의 통합 방식에 대한 기술적 판단이 필요하다.
 
-  let formatted;
+2. 전제 조건
+레거시 시스템은 Nexacro Runtime 전용 브라우저 기반으로 동작한다.
 
-  if (showDecimal) {
-    formatted = absNum.toFixed(decimalPlaces);
-  } else {
-    formatted = Math.trunc(absNum).toString();
-  }
+레거시 화면은 HTML5 웹 모드가 아닌 Runtime 실행 방식이다.
 
-  if (useComma) {
-    const [integerPart, decimalPart] = formatted.split('.');
+차세대 시스템은 웹 브라우저 기반 UI로 설계 예정이다.
 
-    const commaInteger = integerPart.replace(
-      /\B(?=(\d{3})+(?!\d))/g,
-      ','
-    );
+통합 요구사항 중 하나로 “차세대 화면 내 레거시 화면 임베디드”가 언급되었다.
 
-    formatted =
-      decimalPart !== undefined
-        ? `${commaInteger}.${decimalPart}`
-        : commaInteger;
-  }
+3. iframe의 기술적 정의
+iframe은 웹 브라우저 내에서 다른 HTML 문서를 포함하여 렌더링하는 웹 표준 기술이다.
+즉, iframe이 정상 동작하려면 다음 조건이 충족되어야 한다.
 
-  // 음수 스타일 처리
-  if (isNegative) {
-    if (negativeStyle === 'parentheses') {
-      return `(${formatted})`;
-    }
-    return `-${formatted}`;
-  }
+렌더링 대상이 HTML 문서여야 함
 
-  return formatted;
-}
---------------------------------------------------
-formatNumber(-1234567);
-// "-1,234,567"
+브라우저 DOM 및 렌더링 엔진에서 해석 가능한 구조여야 함
 
-formatNumber(-1234567.891, {
-  showDecimal: true,
-  decimalPlaces: 2,
-});
-// "-1,234,567.89"
+동일한 웹 실행 컨텍스트 내에서 처리 가능해야 함
 
-formatNumber(-1234567.891, {
-  showDecimal: true,
-  decimalPlaces: 2,
-  negativeStyle: 'parentheses',
-});
-// "(1,234,567.89)"
+4. Nexacro Runtime 화면을 iframe으로 임베디드할 수 없는 원인
+원인 1) 렌더링 엔진(화면 처리 방식)이 상이함
+웹 브라우저 iframe은 브라우저 렌더링 엔진(Chromium 등)이 HTML/CSS/JavaScript를 해석하여 화면을 구성하는 구조이다.
+반면 Nexacro Runtime은 HTML 렌더링이 아닌 Nexacro 전용 실행 엔진을 통해 UI를 구성한다.
 
-formatNumber(-1234567, {
-  useComma: false,
-});
-// "-1234567"
-----------------------------------------------------------------------
-/**
- * AG Grid valueFormatter 전용 숫자 포맷 wrapper
- *
- * @param {Object} options - formatNumber 옵션
- * @returns {(params: any) => string}
- */
-export function numberFormatter(options = {}) {
-  return (params) => {
-    if (!params) return '';
+즉, 브라우저는 Nexacro 전용 포맷을 해석할 수 없으며,
+렌더링 엔진 자체가 다르므로 iframe 내 표시가 불가능하다.
 
-    const { value, node } = params;
+원인 2) 실행 대상의 성격 차이 (문서 vs 프로그램)
+iframe은 “웹 문서(HTML)”를 포함시키는 구조이다.
+그러나 Nexacro Runtime은 웹 문서가 아니라 전용 실행 프로그램 형태에 가깝다.
 
-    // 그룹 행 / 집계 행 방어
-    if (node?.group && value == null) return '';
+즉,
 
-    return formatNumber(value, options);
-  };
-}
----------------------------------------------------------
+iframe은 “문서를 담는 컨테이너”
 
-const columnDefs = [
-  {
-    headerName: '금액',
-    field: 'amount',
-    valueFormatter: numberFormatter({
-      useComma: true,
-      showDecimal: true,
-      decimalPlaces: 2,
-      negativeStyle: 'minus',
-    }),
-  },
-  {
-    headerName: '수량',
-    field: 'qty',
-    valueFormatter: numberFormatter({
-      useComma: true,
-      showDecimal: false,
-    }),
-  },
-];
+Nexacro Runtime은 “프로그램 실행 환경”
+
+으로 구조 자체가 다르다.
+
+문서 삽입 기술로 프로그램 실행 환경을 포함하는 것은 기술적으로 성립하지 않는다.
+
+원인 3) 실행 프로세스가 분리되어 있음
+웹 브라우저의 iframe은 동일 브라우저 프로세스 내에서 동작한다.
+반면 Nexacro Runtime 전용 브라우저는 일반적으로 별도 실행 프로세스 또는 별도 런타임 환경에서 동작한다.
+
+브라우저 내부 컨텍스트와 Nexacro Runtime 컨텍스트는 물리적으로 분리되어 있으므로,
+iframe을 통해 통합하는 방식은 구조적으로 불가능하다.
+
+원인 4) 현대 브라우저 보안 모델상 외부 프로그램 내장을 허용하지 않음
+현대 웹 브라우저는 보안상 외부 네이티브 프로그램을 웹페이지 내부에 직접 포함시키는 것을 허용하지 않는다.
+과거 ActiveX 등 특수 사례가 있었으나, 현재 표준 브라우저 환경에서는 해당 방식이 차단되어 있다.
+
+따라서 보안 정책 측면에서도 Runtime 기반 프로그램을 iframe으로 내장하는 것은 허용되지 않는다.
+
+원인 5) iframe 임베디드를 원할 경우 레거시의 웹화가 선행되어야 함
+iframe 임베디드는 전제 조건이 “웹 기반 화면”이다.
+현재 레거시는 Runtime 전용 구조이므로, iframe 임베디드를 실현하려면 레거시를 HTML5 모드로 전환하거나 웹 기반으로 재구성해야 한다.
+
+단순 설정 변경이나 링크 방식으로 해결될 사안이 아니다.
+
+5. 관련 오해 정리
+“전용 브라우저도 브라우저이므로 iframe 가능하지 않나?”
+→ 전용 브라우저는 웹 표준 브라우저와 동일한 렌더링 모델을 사용하는 것이 아니며, Nexacro 실행기 성격이 강하다.
+
+“링크로 띄우면 되는 것 아닌가?”
+→ 링크 실행은 별도 창 실행이며, iframe 임베디드와는 전혀 다른 개념이다.
+
+6. 영향 분석
+웹 기반 임베디드 전략은 기술적으로 성립하지 않음
+
+통합 방식은 “화면 내 포함”이 아니라 “메뉴 통합 + 런타임 실행 연계” 방식으로 재정의 필요
+
+장기적으로 웹 통합을 목표로 할 경우, 별도의 전환 프로젝트가 필요
+
+7. 현실적인 통합 대안
+대안 A) 차세대 웹 → 레거시 런타임 별도 창 실행 (권장)
+차세대 포털 메뉴에서 레거시 실행
+
+Nexacro Runtime 전용 브라우저가 별도 창으로 실행
+
+레거시 변경 최소
+
+구현 난이도 낮음
+
+사용자 창 전환 발생
+
+→ 단기 통합 목적에 가장 현실적인 방안
+
+대안 B) 통합 실행기(포털 런처) 구축
+웹과 런타임을 하나의 데스크탑 컨테이너로 통합
+
+UX 통합 가능성 높음
+
+초기 구축 비용 및 복잡도 증가
+
+대안 C) 레거시 HTML5 전환 후 iframe 적용 (중장기)
+Nexacro 화면을 웹 모드로 전환
+
+진정한 iframe 임베디드 가능
+
+범위/비용/일정 확대
+
+대안 D) 레거시 기능 API화 후 차세대 UI 재구성
+UI 재개발
+
+장기적으로 가장 이상적
+
+단기 사업 범위에는 부담
+
+8. 의사결정 기준
+조건	권장 대안
+단기 통합, 레거시 변경 최소	대안 A
+사용자 경험 통합 강화 필요	대안 B
+장기 웹 통합 전략	대안 C
+레거시 대체 목표	대안 D
+9. 최종 결론
+Nexacro Runtime 전용 브라우저 기반 레거시 화면은 웹 iframe으로 임베디드할 수 없다.
+
+이는 렌더링 엔진, 실행 모델, 프로세스 구조, 브라우저 보안 정책 등 구조적 차이에 기인한다.
+
+차세대 통합 전략은 “웹 임베디드”가 아닌 메뉴 통합 + 레거시 런타임 별도 실행 구조로 재정의하는 것이 타당하다.
+
+웹 임베디드를 목표로 할 경우, 이는 별도의 레거시 웹화 또는 재구성 프로젝트로 분리 검토가 필요하다.
