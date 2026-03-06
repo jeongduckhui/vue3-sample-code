@@ -1,140 +1,334 @@
-Nexacro Runtime 전용 브라우저 화면의 iframe 임베디드 불가 사유 및 통합 대안 검토
+좋은 질문이야.
+**Spring Boot로 기업용 백엔드를 만들 때 거의 항상 등장하는 “공통 모듈(Common Infrastructure)”**이 있어.
+차세대 프로젝트 같은 대형 시스템에서는 이걸 먼저 설계해야 전체 생산성이 올라간다.
+너처럼 차세대 + React + Spring Boot + SSO + MyBatis/JPA 환경이라면 보통 아래 구조로 정리한다.
+1️⃣ 인증 / 사용자 관리 (Authentication)
+가장 기본적인 공통 영역.
+포함 기능
+로그인 / 로그아웃
+SSO 연동 (OAuth2 / OIDC / SAML 등)
+JWT 발급
+Refresh Token 관리
+사용자 세션 관리
+비밀번호 정책
+계정 잠금
+다중 로그인 정책
+주요 테이블
+코드 복사
 
-1. 문서 목적
-본 문서는 차세대 시스템 구축 과정에서 제기된 “레거시 Nexacro 화면의 웹 브라우저 iframe 임베디드” 가능 여부에 대해 기술적 타당성을 검토하고, 불가 사유를 명확히 정리하며, 현실적인 통합 대안을 제시하기 위한 보고 자료이다.
+users
+user_status
+login_history
+password_history
+refresh_token
+주요 기능
+코드 복사
 
-현재 레거시는 Nexacro Runtime 전용 브라우저 기반으로 운영되고 있으며, 차세대는 웹 기반 시스템으로 설계가 검토되고 있다. 이에 따라 두 시스템의 통합 방식에 대한 기술적 판단이 필요하다.
+AuthController
+AuthService
+JwtTokenProvider
+RefreshTokenService
+LoginFailureHandler
+너가 지금 SSO Type1 구현방에서 만드는 영역이 바로 이거다.
+2️⃣ 권한 관리 (Authorization)
+기업 시스템에서 거의 반드시 필요
+구성 요소
+코드 복사
 
+Role
+Permission
+UserRole
+RoleHierarchy
+MenuPermission
+ApiPermission
+기능
+코드 복사
 
-2. 전제 조건
-레거시 시스템은 Nexacro Runtime 전용 브라우저 기반으로 동작한다.
+메뉴 권한
+API 권한
+Role Hierarchy
+URL 기반 권한
+Method 기반 권한
+동적 권한 매핑
+Spring Security 기반으로 구현.
+예
+코드 복사
 
-레거시 화면은 HTML5 웹 모드가 아닌 Runtime 실행 방식이다.
+ADMIN > MANAGER > USER
+3️⃣ 메뉴 관리 (Menu Management)
+프론트와 백엔드가 같이 사용하는 영역.
+테이블
+코드 복사
 
-차세대 시스템은 웹 브라우저 기반 UI로 설계 예정이다.
+menu
+menu_role
+기능
+코드 복사
 
-통합 요구사항 중 하나로 “차세대 화면 내 레거시 화면 임베디드”가 언급되었다.
+메뉴 트리 구조
+메뉴 권한
+메뉴 순서
+메뉴 활성화 여부
+API
+코드 복사
 
+GET /api/menus
+GET /api/menus/my
+React에서는 이걸로 좌측 메뉴 생성.
+4️⃣ 다국어 (i18n)
+대기업 시스템에서는 거의 필수.
+방식
+보통 2가지
+① properties 방식
+코드 복사
 
-3. iframe의 기술적 정의
-iframe은 웹 브라우저 내에서 다른 HTML 문서를 포함하여 렌더링하는 웹 표준 기술이다.
-즉, iframe이 정상 동작하려면 다음 조건이 충족되어야 한다.
+messages_ko.properties
+messages_en.properties
+② DB 방식 (실무에서 많이 씀)
+코드 복사
 
-렌더링 대상이 HTML 문서여야 함
+message
+message_locale
+예
+code
+ko
+en
+login.fail
+로그인 실패
+Login failed
+API
+코드 복사
 
-브라우저 DOM 및 렌더링 엔진에서 해석 가능한 구조여야 함
+GET /api/messages
+5️⃣ 공통 메시지 / 에러 코드
+모든 API 에러 형식을 통일.
+예
+코드 복사
 
-동일한 웹 실행 컨텍스트 내에서 처리 가능해야 함
+{
+  "code": "USER_NOT_FOUND",
+  "message": "사용자를 찾을 수 없습니다"
+}
+구성
+코드 복사
 
+ErrorCode enum
+BusinessException
+GlobalExceptionHandler
+ApiResponse
+6️⃣ 공통 응답 구조 (API Response)
+기업 시스템에서 매우 중요.
+예
+코드 복사
 
-4. Nexacro Runtime 화면을 iframe으로 임베디드할 수 없는 원인
-원인 1) 렌더링 엔진(화면 처리 방식)이 상이함
-웹 브라우저 iframe은 브라우저 렌더링 엔진(Chromium 등)이 HTML/CSS/JavaScript를 해석하여 화면을 구성하는 구조이다.
-반면 Nexacro Runtime은 HTML 렌더링이 아닌 Nexacro 전용 실행 엔진을 통해 UI를 구성한다.
+{
+  "success": true,
+  "data": {},
+  "message": null
+}
+또는
+코드 복사
 
-즉, 브라우저는 Nexacro 전용 포맷을 해석할 수 없으며,
-렌더링 엔진 자체가 다르므로 iframe 내 표시가 불가능하다.
+{
+  "success": false,
+  "errorCode": "INVALID_TOKEN",
+  "message": "토큰이 유효하지 않습니다"
+}
+공통 클래스
+코드 복사
 
-원인 2) 실행 대상의 성격 차이 (문서 vs 프로그램)
-iframe은 “웹 문서(HTML)”를 포함시키는 구조이다.
-그러나 Nexacro Runtime은 웹 문서가 아니라 전용 실행 프로그램 형태에 가깝다.
+ApiResponse
+ErrorResponse
+7️⃣ 코드 관리 (Common Code)
+ERP / 기업 시스템에서 반드시 있음.
+예
+코드 복사
 
-즉,
+공통코드
 
-iframe은 “문서를 담는 컨테이너”
+COUNTRY
+USER_STATUS
+ORDER_STATUS
+PAYMENT_TYPE
+테이블
+코드 복사
 
-Nexacro Runtime은 “프로그램 실행 환경”
+code_group
+code
+API
+코드 복사
 
-으로 구조 자체가 다르다.
+GET /api/codes/{group}
+React에서
+코드 복사
 
-문서 삽입 기술로 프로그램 실행 환경을 포함하는 것은 기술적으로 성립하지 않는다.
+dropdown
+radio
+checkbox
+용도로 사용.
+8️⃣ 파일 업로드 (File Storage)
+거의 모든 시스템에 필요.
+기능
+코드 복사
 
-원인 3) 실행 프로세스가 분리되어 있음
-웹 브라우저의 iframe은 동일 브라우저 프로세스 내에서 동작한다.
-반면 Nexacro Runtime 전용 브라우저는 일반적으로 별도 실행 프로세스 또는 별도 런타임 환경에서 동작한다.
+파일 업로드
+파일 다운로드
+이미지 미리보기
+파일 메타데이터
+테이블
+코드 복사
 
-브라우저 내부 컨텍스트와 Nexacro Runtime 컨텍스트는 물리적으로 분리되어 있으므로,
-iframe을 통해 통합하는 방식은 구조적으로 불가능하다.
+file
+file_attachment
+저장 방식
+코드 복사
 
-원인 4) 현대 브라우저 보안 모델상 외부 프로그램 내장을 허용하지 않음
-현대 웹 브라우저는 보안상 외부 네이티브 프로그램을 웹페이지 내부에 직접 포함시키는 것을 허용하지 않는다.
-과거 ActiveX 등 특수 사례가 있었으나, 현재 표준 브라우저 환경에서는 해당 방식이 차단되어 있다.
+Local
+S3
+NFS
+Object Storage
+9️⃣ 로그 / 감사 로그 (Audit)
+기업에서는 거의 필수
+종류
+코드 복사
 
-따라서 보안 정책 측면에서도 Runtime 기반 프로그램을 iframe으로 내장하는 것은 허용되지 않는다.
+로그인 로그
+API 호출 로그
+데이터 변경 로그
+관리자 작업 로그
+테이블
+코드 복사
 
-원인 5) iframe 임베디드를 원할 경우 레거시의 웹화가 선행되어야 함
-iframe 임베디드는 전제 조건이 “웹 기반 화면”이다.
-현재 레거시는 Runtime 전용 구조이므로, iframe 임베디드를 실현하려면 레거시를 HTML5 모드로 전환하거나 웹 기반으로 재구성해야 한다.
+login_history
+audit_log
+api_log
+🔟 공통 설정 (System Configuration)
+운영 중에 바꿀 수 있는 설정.
+예
+코드 복사
 
-단순 설정 변경이나 링크 방식으로 해결될 사안이 아니다.
+비밀번호 정책
+세션 시간
+파일 업로드 사이즈
+OTP 설정
+로그 레벨
+테이블
+코드 복사
 
+system_config
+11️⃣ 알림 시스템 (Notification)
+선택이지만 요즘 많이 넣음.
+기능
+코드 복사
 
-5. 관련 오해 정리
-“전용 브라우저도 브라우저이므로 iframe 가능하지 않나?”
-→ 전용 브라우저는 웹 표준 브라우저와 동일한 렌더링 모델을 사용하는 것이 아니며, Nexacro 실행기 성격이 강하다.
+이메일
+SMS
+푸시
+웹 알림
+테이블
+코드 복사
 
-“링크로 띄우면 되는 것 아닌가?”
-→ 링크 실행은 별도 창 실행이며, iframe 임베디드와는 전혀 다른 개념이다.
+notification
+notification_history
+12️⃣ 배치 / 스케줄러
+백엔드에서 자동 작업.
+예
+코드 복사
 
+토큰 정리
+로그 정리
+배치 데이터 처리
+메일 발송
+Spring
+코드 복사
 
-6. 영향 분석
-웹 기반 임베디드 전략은 기술적으로 성립하지 않음
+@Scheduled
+Quartz
+📦 기업 시스템 공통 모듈 전체 구조
+보통 이렇게 나눈다.
+코드 복사
 
-통합 방식은 “화면 내 포함”이 아니라 “메뉴 통합 + 런타임 실행 연계” 방식으로 재정의 필요
+common-core
+ ├─ auth
+ ├─ user
+ ├─ role
+ ├─ permission
+ ├─ menu
+ ├─ code
+ ├─ message
+ ├─ exception
+ ├─ response
+ ├─ audit
+ ├─ file
+ └─ config
+🔥 실무에서 가장 중요한 공통 7개
+정말 80% 프로젝트에서 필수
+1️⃣ 인증 (Auth)
+2️⃣ 권한 (Role / Permission)
+3️⃣ 메뉴 (Menu)
+4️⃣ 공통 코드 (Common Code)
+5️⃣ 공통 메시지 / 다국어
+6️⃣ 공통 API 응답 / 에러
+7️⃣ 감사 로그 (Audit)
+💡 차세대 프로젝트 기준 추천 공통 구조
+너 프로젝트 기준으로 보면 나는 이렇게 만든다.
+코드 복사
 
-장기적으로 웹 통합을 목표로 할 경우, 별도의 전환 프로젝트가 필요
+common-auth
+common-security
+common-menu
+common-code
+common-message
+common-exception
+common-response
+common-audit
+common-file
+common-config
+📊 실무 기준 판단표
+공통 기능
+필요도
+이유
+인증(Auth)
+⭐⭐⭐⭐⭐
+시스템 핵심
+권한(Role/Permission)
+⭐⭐⭐⭐⭐
+접근제어
+메뉴
+⭐⭐⭐⭐
+UI 구성
+공통 코드
+⭐⭐⭐⭐
+드롭다운
+에러 / 메시지
+⭐⭐⭐⭐
+API 표준화
+다국어
+⭐⭐⭐
+글로벌 서비스
+파일 업로드
+⭐⭐⭐
+문서 시스템
+로그 / 감사
+⭐⭐⭐⭐
+운영 추적
+알림
+⭐⭐
+선택
+💬 내가 하나 더 알려줄게.
+너가 하는 차세대 프로젝트에서 가장 중요한 공통 3개는 사실 이거다.
+코드 복사
 
-
-7. 현실적인 통합 대안
-대안 A) 차세대 웹 → 레거시 런타임 별도 창 실행 (권장)
-차세대 포털 메뉴에서 레거시 실행
-
-Nexacro Runtime 전용 브라우저가 별도 창으로 실행
-
-레거시 변경 최소
-
-구현 난이도 낮음
-
-사용자 창 전환 발생
-
-→ 단기 통합 목적에 가장 현실적인 방안
-
-대안 B) 통합 실행기(포털 런처) 구축
-웹과 런타임을 하나의 데스크탑 컨테이너로 통합
-
-UX 통합 가능성 높음
-
-초기 구축 비용 및 복잡도 증가
-
-대안 C) 레거시 HTML5 전환 후 iframe 적용 (중장기)
-Nexacro 화면을 웹 모드로 전환
-
-진정한 iframe 임베디드 가능
-
-범위/비용/일정 확대
-
-대안 D) 레거시 기능 API화 후 차세대 UI 재구성
-UI 재개발
-
-장기적으로 가장 이상적
-
-단기 사업 범위에는 부담
-
-
-8. 의사결정 기준
-조건	권장 대안
-단기 통합, 레거시 변경 최소	대안 A
-사용자 경험 통합 강화 필요	대안 B
-장기 웹 통합 전략	대안 C
-레거시 대체 목표	대안 D
-
-
-9. 최종 결론
-Nexacro Runtime 전용 브라우저 기반 레거시 화면은 웹 iframe으로 임베디드할 수 없다.
-
-이는 렌더링 엔진, 실행 모델, 프로세스 구조, 브라우저 보안 정책 등 구조적 차이에 기인한다.
-
-차세대 통합 전략은 “웹 임베디드”가 아닌 메뉴 통합 + 레거시 런타임 별도 실행 구조로 재정의하는 것이 타당하다.
-
-웹 임베디드를 목표로 할 경우, 이는 별도의 레거시 웹화 또는 재구성 프로젝트로 분리 검토가 필요하다.
-
+1️⃣ Auth / SSO
+2️⃣ Permission (권한)
+3️⃣ Menu
+이 3개 구조가 시스템 전체 구조를 결정한다.
+원하면 내가 다음 것도 만들어 줄게.
+“차세대 프로젝트에서 사용하는
+Spring Boot 공통 아키텍처 (실무 레벨)”
+패키지 구조
+DB 테이블
+Security 구조
+React 연동 방식
+이거 실무에서 바로 쓰는 수준으로 정리해줄게.
+(아마 너 프로젝트에도 바로 도움이 될 거다.)
