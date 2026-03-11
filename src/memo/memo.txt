@@ -1,334 +1,111 @@
-좋은 질문이야.
-**Spring Boot로 기업용 백엔드를 만들 때 거의 항상 등장하는 “공통 모듈(Common Infrastructure)”**이 있어.
-차세대 프로젝트 같은 대형 시스템에서는 이걸 먼저 설계해야 전체 생산성이 올라간다.
-너처럼 차세대 + React + Spring Boot + SSO + MyBatis/JPA 환경이라면 보통 아래 구조로 정리한다.
-1️⃣ 인증 / 사용자 관리 (Authentication)
-가장 기본적인 공통 영역.
-포함 기능
-로그인 / 로그아웃
-SSO 연동 (OAuth2 / OIDC / SAML 등)
-JWT 발급
-Refresh Token 관리
-사용자 세션 관리
-비밀번호 정책
-계정 잠금
-다중 로그인 정책
-주요 테이블
-코드 복사
+import { AgGridReact } from "ag-grid-react";
+import { useState, useRef } from "react";
 
-users
-user_status
-login_history
-password_history
-refresh_token
-주요 기능
-코드 복사
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
 
-AuthController
-AuthService
-JwtTokenProvider
-RefreshTokenService
-LoginFailureHandler
-너가 지금 SSO Type1 구현방에서 만드는 영역이 바로 이거다.
-2️⃣ 권한 관리 (Authorization)
-기업 시스템에서 거의 반드시 필요
-구성 요소
-코드 복사
+function GridExample() {
 
-Role
-Permission
-UserRole
-RoleHierarchy
-MenuPermission
-ApiPermission
-기능
-코드 복사
+  const gridRef = useRef();
 
-메뉴 권한
-API 권한
-Role Hierarchy
-URL 기반 권한
-Method 기반 권한
-동적 권한 매핑
-Spring Security 기반으로 구현.
-예
-코드 복사
+  const [rowData, setRowData] = useState([
+    {
+      all:false,
+      colA:false,
+      colB:false,
+      colC:false,
 
-ADMIN > MANAGER > USER
-3️⃣ 메뉴 관리 (Menu Management)
-프론트와 백엔드가 같이 사용하는 영역.
-테이블
-코드 복사
+      all2:false,
+      colD:false,
+      colE:false,
+      colF:false
+    }
+  ]);
 
-menu
-menu_role
-기능
-코드 복사
+  const columnDefs = [
 
-메뉴 트리 구조
-메뉴 권한
-메뉴 순서
-메뉴 활성화 여부
-API
-코드 복사
+    { field:"all", headerName:"ALL",
+      cellRenderer:"agCheckboxCellRenderer",
+      editable:true
+    },
 
-GET /api/menus
-GET /api/menus/my
-React에서는 이걸로 좌측 메뉴 생성.
-4️⃣ 다국어 (i18n)
-대기업 시스템에서는 거의 필수.
-방식
-보통 2가지
-① properties 방식
-코드 복사
+    { field:"colA", headerName:"A",
+      cellRenderer:"agCheckboxCellRenderer",
+      editable:true
+    },
 
-messages_ko.properties
-messages_en.properties
-② DB 방식 (실무에서 많이 씀)
-코드 복사
+    { field:"colB", headerName:"B",
+      cellRenderer:"agCheckboxCellRenderer",
+      editable:true
+    },
 
-message
-message_locale
-예
-code
-ko
-en
-login.fail
-로그인 실패
-Login failed
-API
-코드 복사
+    { field:"colC", headerName:"C",
+      cellRenderer:"agCheckboxCellRenderer",
+      editable:true
+    },
 
-GET /api/messages
-5️⃣ 공통 메시지 / 에러 코드
-모든 API 에러 형식을 통일.
-예
-코드 복사
 
-{
-  "code": "USER_NOT_FOUND",
-  "message": "사용자를 찾을 수 없습니다"
+    { field:"all2", headerName:"ALL2",
+      cellRenderer:"agCheckboxCellRenderer",
+      editable:true
+    },
+
+    { field:"colD", headerName:"D",
+      cellRenderer:"agCheckboxCellRenderer",
+      editable:true
+    },
+
+    { field:"colE", headerName:"E",
+      cellRenderer:"agCheckboxCellRenderer",
+      editable:true
+    },
+
+    { field:"colF", headerName:"F",
+      cellRenderer:"agCheckboxCellRenderer",
+      editable:true
+    }
+
+  ];
+
+
+  const onCellValueChanged = (params)=>{
+
+    const field = params.colDef.field;
+    const checked = params.newValue;
+    const node = params.node;
+
+    // ALL -> 2,3,4
+    if(field==="all"){
+      node.setDataValue("colA", checked);
+      node.setDataValue("colB", checked);
+      node.setDataValue("colC", checked);
+    }
+
+    // ALL2 -> 6,7,8
+    if(field==="all2"){
+      node.setDataValue("colD", checked);
+      node.setDataValue("colE", checked);
+      node.setDataValue("colF", checked);
+    }
+
+  };
+
+
+  return (
+
+    <div className="ag-theme-alpine" style={{height:400}}>
+
+      <AgGridReact
+        ref={gridRef}
+        rowData={rowData}
+        columnDefs={columnDefs}
+        onCellValueChanged={onCellValueChanged}
+      />
+
+    </div>
+
+  );
+
 }
-구성
-코드 복사
 
-ErrorCode enum
-BusinessException
-GlobalExceptionHandler
-ApiResponse
-6️⃣ 공통 응답 구조 (API Response)
-기업 시스템에서 매우 중요.
-예
-코드 복사
-
-{
-  "success": true,
-  "data": {},
-  "message": null
-}
-또는
-코드 복사
-
-{
-  "success": false,
-  "errorCode": "INVALID_TOKEN",
-  "message": "토큰이 유효하지 않습니다"
-}
-공통 클래스
-코드 복사
-
-ApiResponse
-ErrorResponse
-7️⃣ 코드 관리 (Common Code)
-ERP / 기업 시스템에서 반드시 있음.
-예
-코드 복사
-
-공통코드
-
-COUNTRY
-USER_STATUS
-ORDER_STATUS
-PAYMENT_TYPE
-테이블
-코드 복사
-
-code_group
-code
-API
-코드 복사
-
-GET /api/codes/{group}
-React에서
-코드 복사
-
-dropdown
-radio
-checkbox
-용도로 사용.
-8️⃣ 파일 업로드 (File Storage)
-거의 모든 시스템에 필요.
-기능
-코드 복사
-
-파일 업로드
-파일 다운로드
-이미지 미리보기
-파일 메타데이터
-테이블
-코드 복사
-
-file
-file_attachment
-저장 방식
-코드 복사
-
-Local
-S3
-NFS
-Object Storage
-9️⃣ 로그 / 감사 로그 (Audit)
-기업에서는 거의 필수
-종류
-코드 복사
-
-로그인 로그
-API 호출 로그
-데이터 변경 로그
-관리자 작업 로그
-테이블
-코드 복사
-
-login_history
-audit_log
-api_log
-🔟 공통 설정 (System Configuration)
-운영 중에 바꿀 수 있는 설정.
-예
-코드 복사
-
-비밀번호 정책
-세션 시간
-파일 업로드 사이즈
-OTP 설정
-로그 레벨
-테이블
-코드 복사
-
-system_config
-11️⃣ 알림 시스템 (Notification)
-선택이지만 요즘 많이 넣음.
-기능
-코드 복사
-
-이메일
-SMS
-푸시
-웹 알림
-테이블
-코드 복사
-
-notification
-notification_history
-12️⃣ 배치 / 스케줄러
-백엔드에서 자동 작업.
-예
-코드 복사
-
-토큰 정리
-로그 정리
-배치 데이터 처리
-메일 발송
-Spring
-코드 복사
-
-@Scheduled
-Quartz
-📦 기업 시스템 공통 모듈 전체 구조
-보통 이렇게 나눈다.
-코드 복사
-
-common-core
- ├─ auth
- ├─ user
- ├─ role
- ├─ permission
- ├─ menu
- ├─ code
- ├─ message
- ├─ exception
- ├─ response
- ├─ audit
- ├─ file
- └─ config
-🔥 실무에서 가장 중요한 공통 7개
-정말 80% 프로젝트에서 필수
-1️⃣ 인증 (Auth)
-2️⃣ 권한 (Role / Permission)
-3️⃣ 메뉴 (Menu)
-4️⃣ 공통 코드 (Common Code)
-5️⃣ 공통 메시지 / 다국어
-6️⃣ 공통 API 응답 / 에러
-7️⃣ 감사 로그 (Audit)
-💡 차세대 프로젝트 기준 추천 공통 구조
-너 프로젝트 기준으로 보면 나는 이렇게 만든다.
-코드 복사
-
-common-auth
-common-security
-common-menu
-common-code
-common-message
-common-exception
-common-response
-common-audit
-common-file
-common-config
-📊 실무 기준 판단표
-공통 기능
-필요도
-이유
-인증(Auth)
-⭐⭐⭐⭐⭐
-시스템 핵심
-권한(Role/Permission)
-⭐⭐⭐⭐⭐
-접근제어
-메뉴
-⭐⭐⭐⭐
-UI 구성
-공통 코드
-⭐⭐⭐⭐
-드롭다운
-에러 / 메시지
-⭐⭐⭐⭐
-API 표준화
-다국어
-⭐⭐⭐
-글로벌 서비스
-파일 업로드
-⭐⭐⭐
-문서 시스템
-로그 / 감사
-⭐⭐⭐⭐
-운영 추적
-알림
-⭐⭐
-선택
-💬 내가 하나 더 알려줄게.
-너가 하는 차세대 프로젝트에서 가장 중요한 공통 3개는 사실 이거다.
-코드 복사
-
-1️⃣ Auth / SSO
-2️⃣ Permission (권한)
-3️⃣ Menu
-이 3개 구조가 시스템 전체 구조를 결정한다.
-원하면 내가 다음 것도 만들어 줄게.
-“차세대 프로젝트에서 사용하는
-Spring Boot 공통 아키텍처 (실무 레벨)”
-패키지 구조
-DB 테이블
-Security 구조
-React 연동 방식
-이거 실무에서 바로 쓰는 수준으로 정리해줄게.
-(아마 너 프로젝트에도 바로 도움이 될 거다.)
+export default GridExample;
