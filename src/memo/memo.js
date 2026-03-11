@@ -1,92 +1,33 @@
-function diffData(original, changed) {
-  const result = {};
+const groups = {
+  all:["colA","colB","colC"],
+  all2:["colD","colE","colF"]
+};
 
-  Object.keys(changed).forEach((key) => {
-    const originVal = original?.[key];
-    const changedVal = changed[key];
+const onCellValueChanged = (params)=>{
 
-    // 1. 문자열 (콤마 처리)
-    if (typeof changedVal === 'string') {
-      if (originVal !== changedVal) {
-        const originSet = new Set((originVal || '').split(','));
-        const changedList = changedVal.split(',');
+  const field = params.colDef.field;
+  const node = params.node;
+  const checked = params.newValue;
 
-        const added = changedList.filter(v => !originSet.has(v));
-        if (added.length > 0) {
-          result[key] = added.join(',');
-        }
-      }
-      return;
+  // ALL 클릭
+  if(groups[field]){
+    groups[field].forEach(c=>node.setDataValue(c,checked));
+    return;
+  }
+
+  // child 클릭 → ALL 계산
+  Object.keys(groups).forEach(allField=>{
+
+    const children = groups[allField];
+
+    if(children.includes(field)){
+
+      const allChecked = children.every(c=>node.data[c]);
+
+      node.setDataValue(allField, allChecked);
+
     }
 
-    // 2. primitive
-    if (
-      typeof changedVal !== 'object' ||
-      changedVal === null
-    ) {
-      if (originVal !== changedVal) {
-        result[key] = changedVal;
-      }
-      return;
-    }
-
-    // 3. object / array
-    const childDiff = diffData(originVal || {}, changedVal);
-    if (Object.keys(childDiff).length > 0) {
-      result[key] = childDiff;
-    }
   });
 
-  return result;
-}
---------------------------------------------------------------------
-const resultData = diffData(originalData, changedData);
-console.log(resultData);
-====================================================================
-  function toColumnArray(searchCondition) {
-  const result = [];
-
-  Object.entries(searchCondition).forEach(([key, value]) => {
-    if (typeof value === 'string' && value.includes(',')) {
-      value.split(',').forEach(v => {
-        result.push({
-          COLUMN: key,
-          VALUE: v
-        });
-      });
-    } else {
-      result.push({
-        COLUMN: key,
-        VALUE: value
-      });
-    }
-  });
-
-  return result;
-}
---------------------------------------------------------------------
-toColumnArray(searchCondition);
-====================================================================
-  function toConditionString(searchCondition) {
-  const andConditions = [];
-
-  Object.entries(searchCondition).forEach(([key, value]) => {
-    if (typeof value === 'string' && value.includes(',')) {
-      const orConditions = value
-        .split(',')
-        .map(v => `${key}=${v}`)
-        .join('||');
-
-      andConditions.push(orConditions);
-    } else {
-      andConditions.push(`${key}=${value}`);
-    }
-  });
-
-  return andConditions.join('&&');
-}
---------------------------------------------------------------------
-toConditionString(searchCondition);
-====================================================================
-
-  
+};
