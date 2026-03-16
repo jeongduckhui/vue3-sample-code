@@ -1,33 +1,37 @@
-const groups = {
-  all:["colA","colB","colC"],
-  all2:["colD","colE","colF"]
-};
+const freezeRows = (params) => {
 
-const onCellValueChanged = (params)=>{
+  const rowIndex = params.node.rowIndex;
 
-  const field = params.colDef.field;
-  const node = params.node;
-  const checked = params.newValue;
+  const allRows = [];
 
-  // ALL 클릭
-  if(groups[field]){
-    groups[field].forEach(c=>node.setDataValue(c,checked));
-    return;
-  }
-
-  // child 클릭 → ALL 계산
-  Object.keys(groups).forEach(allField=>{
-
-    const children = groups[allField];
-
-    if(children.includes(field)){
-
-      const allChecked = children.every(c=>node.data[c]);
-
-      node.setDataValue(allField, allChecked);
-
-    }
-
+  params.api.forEachNodeAfterFilterAndSort(node => {
+    allRows.push(node.data);
   });
 
+  const pinnedRows = allRows.slice(0, rowIndex + 1);
+  const normalRows = allRows.slice(rowIndex + 1);
+
+  params.api.setGridOption("pinnedTopRowData", pinnedRows);
+  params.api.setGridOption("rowData", normalRows);
+};
+
+
+const unfreezeRows = (params) => {
+
+  const pinnedRows = params.api.getPinnedTopRowCount();
+
+  const pinnedData = [];
+
+  for (let i = 0; i < pinnedRows; i++) {
+    pinnedData.push(params.api.getPinnedTopRow(i).data);
+  }
+
+  const normalRows = [];
+
+  params.api.forEachNode(node => {
+    normalRows.push(node.data);
+  });
+
+  params.api.setGridOption("pinnedTopRowData", []);
+  params.api.setGridOption("rowData", [...pinnedData, ...normalRows]);
 };
