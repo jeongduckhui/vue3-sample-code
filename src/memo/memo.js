@@ -1,3 +1,48 @@
+
+
+const unfreezeColumns = (params) => {
+
+  const columnApi = params.columnApi;
+
+  const columns = columnApi.getAllGridColumns();
+
+  const reset = columns.map(col => ({
+    colId: col.getColId(),
+    pinned: null
+  }));
+
+  columnApi.applyColumnState({
+    state: reset
+  });
+};
+
+
+
+
+const freezeColumns = (params) => {
+
+  const columnApi = params.columnApi;
+
+  const columns = columnApi.getAllGridColumns();
+
+  const targetIndex = columns.findIndex(
+    col => col.getColId() === params.column.getColId()
+  );
+
+  const leftColumns = columns.slice(0, targetIndex + 1).map(col => ({
+    colId: col.getColId(),
+    pinned: "left"
+  }));
+
+  columnApi.applyColumnState({
+    state: leftColumns,
+    applyOrder: false
+  });
+};
+
+
+
+
 const freezeRows = (params) => {
 
   const rowIndex = params.node.rowIndex;
@@ -35,3 +80,8 @@ const unfreezeRows = (params) => {
   params.api.setGridOption("pinnedTopRowData", []);
   params.api.setGridOption("rowData", [...pinnedData, ...normalRows]);
 };
+
+
+
+
+
