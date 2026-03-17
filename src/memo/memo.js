@@ -1,4 +1,42 @@
+const unfreezeAllColumns = (params) => {
+  const api = params.api;
 
+  const displayedColumns = api.getAllDisplayedColumns();
+
+  const state = displayedColumns.map((col) => ({
+    colId: col.getColId(),
+    pinned: null,
+  }));
+
+  api.applyColumnState({
+    state,
+    applyOrder: false,
+  });
+};
+
+const freezeColumnsUntil = (params) => {
+  const api = params.api;
+  const targetColId = params.column.getColId();
+
+  // 현재 화면에 표시되는 컬럼 순서 기준
+  const displayedColumns = api.getAllDisplayedColumns();
+
+  const targetIndex = displayedColumns.findIndex(
+    (col) => col.getColId() === targetColId
+  );
+
+  if (targetIndex < 0) return;
+
+  const state = displayedColumns.map((col, index) => ({
+    colId: col.getColId(),
+    pinned: index <= targetIndex ? "left" : null,
+  }));
+
+  api.applyColumnState({
+    state,
+    applyOrder: false,
+  });
+};
 
 const unfreezeColumns = (params) => {
 
