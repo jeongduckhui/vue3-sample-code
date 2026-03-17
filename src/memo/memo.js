@@ -1,3 +1,93 @@
+
+const unfreezePane = (params) => {
+
+  const api = params.api;
+
+  /*
+   * 행 고정 해제
+   */
+
+  const pinnedCount = api.getPinnedTopRowCount();
+
+  const pinnedRows = [];
+
+  for (let i = 0; i < pinnedCount; i++) {
+    pinnedRows.push(api.getPinnedTopRow(i).data);
+  }
+
+  const normalRows = [];
+
+  api.forEachNode(node => {
+    normalRows.push(node.data);
+  });
+
+  api.setGridOption("pinnedTopRowData", []);
+  api.setGridOption("rowData", [...pinnedRows, ...normalRows]);
+
+  /*
+   * 열 고정 해제
+   */
+
+  const displayedColumns = api.getAllDisplayedColumns();
+
+  const reset = displayedColumns.map(col => ({
+    colId: col.getColId(),
+    pinned: null
+  }));
+
+  api.applyColumnState({
+    state: reset
+  });
+
+};
+
+
+const freezePane = (params) => {
+
+  const api = params.api;
+
+  const rowIndex = params.node.rowIndex;
+  const targetColId = params.column.getColId();
+
+  /*
+   * 1️⃣ 행 Freeze
+   */
+
+  const allRows = [];
+
+  api.forEachNodeAfterFilterAndSort(node => {
+    allRows.push(node.data);
+  });
+
+  const pinnedRows = allRows.slice(0, rowIndex + 1);
+  const normalRows = allRows.slice(rowIndex + 1);
+
+  api.setGridOption("pinnedTopRowData", pinnedRows);
+  api.setGridOption("rowData", normalRows);
+
+  /*
+   * 2️⃣ 열 Freeze
+   */
+
+  const displayedColumns = api.getAllDisplayedColumns();
+
+  const targetIndex = displayedColumns.findIndex(
+    col => col.getColId() === targetColId
+  );
+
+  const columnState = displayedColumns.map((col, index) => ({
+    colId: col.getColId(),
+    pinned: index <= targetIndex ? "left" : null
+  }));
+
+  api.applyColumnState({
+    state: columnState,
+    applyOrder: false
+  });
+
+};
+
+
 const unfreezeAllColumns = (params) => {
   const api = params.api;
 
