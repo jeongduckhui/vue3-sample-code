@@ -1,4 +1,27 @@
 
+const freezeRows = (params) => {
+  const api = params.api;
+  const allRows = originalRowDataRef.current;
+
+  let realRowIndex;
+
+  // 이미 고정된 행을 클릭한 경우
+  if (params.node.rowPinned === "top") {
+    realRowIndex = params.node.rowIndex;
+  } else {
+    const pinnedCount = api.getPinnedTopRowCount();
+    realRowIndex = params.node.rowIndex + pinnedCount;
+  }
+
+  const pinnedRows = allRows.slice(0, realRowIndex + 1);
+  const normalRows = allRows.slice(realRowIndex + 1);
+
+  api.setGridOption("pinnedTopRowData", pinnedRows);
+  api.setGridOption("rowData", normalRows);
+};
+
+
+
 const unfreezeRows = (params) => {
 
   const api = params.api;
