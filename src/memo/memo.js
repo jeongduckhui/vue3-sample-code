@@ -1,4 +1,16 @@
 
+const setZoom = (scale) => {
+
+  const el = document.getElementById("zoom-container");
+
+  if (!el) return;
+
+  el.style.transform = `scale(${scale})`;
+  el.style.transformOrigin = "top left";
+};
+
+
+
 const unfreezePane = (params) => {
 
   const api = params.api;
