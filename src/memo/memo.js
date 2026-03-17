@@ -1,4 +1,35 @@
 
+const unfreezeRows = (params) => {
+
+  const api = params.api;
+
+  // 행 고정 해제
+  api.setGridOption("pinnedTopRowData", []);
+
+  // 원본 데이터 복구
+  api.setGridOption("rowData", originalRowDataRef.current);
+
+};
+
+
+const freezeRows = (params) => {
+
+  const api = params.api;
+
+  const rowIndex = params.node.rowIndex;
+
+  const allRows = originalRowDataRef.current;
+
+  const pinnedRows = allRows.slice(0, rowIndex + 1);
+  const normalRows = allRows.slice(rowIndex + 1);
+
+  api.setGridOption("pinnedTopRowData", pinnedRows);
+  api.setGridOption("rowData", normalRows);
+
+};
+
+
+
 const setZoom = (scale) => {
 
   const el = document.getElementById("zoom-container");
