@@ -1,3 +1,85 @@
+
+import { useRef } from "react";
+import { match } from "./findUtils";
+
+export const useGridFind = (gridApiRef) => {
+
+  // 🔥 마지막 찾은 위치 기억
+  const lastPositionRef = useRef(null);
+
+  const find = (option) => {
+    const api = gridApiRef.current;
+    if (!api) return;
+
+    const rowCount = api.getDisplayedRowCount();
+    const colDefs = api.getColumnDefs();
+
+    let rowIndex;
+
+    // 🔥 처음 검색인지 / 계속 검색인지 구분
+    if (!lastPositionRef.current || option.position === "FIRST") {
+      const focusedCell = api.getFocusedCell();
+
+      rowIndex =
+        option.position === "FIRST"
+          ? 0
+          : focusedCell?.rowIndex ?? 0;
+    } else {
+      // 🔥 이전 위치 다음부터 시작
+      rowIndex = lastPositionRef.current.rowIndex;
+    }
+
+    const step = option.direction === "NEXT" ? 1 : -1;
+
+    // 🔥 다음부터 찾기 위해 한 칸 이동
+    rowIndex += step;
+
+    while (rowIndex >= 0 && rowIndex < rowCount) {
+      const rowNode = api.getDisplayedRowAtIndex(rowIndex);
+
+      let columns = colDefs;
+
+      if (option.scope === "COLUMN") {
+        columns = [lastPositionRef.current?.column || colDefs[0]];
+      }
+
+      for (let col of columns) {
+        const value = rowNode.data[col.field];
+
+        if (match(value, option)) {
+
+          // 🔥 위치 저장
+          lastPositionRef.current = {
+            rowIndex,
+            column: col
+          };
+
+          api.ensureIndexVisible(rowIndex);
+          api.setFocusedCell(rowIndex, col.field);
+
+          return;
+        }
+      }
+
+      rowIndex += step;
+    }
+
+    alert("더 이상 찾을 수 없습니다.");
+
+    // 🔥 끝까지 찾으면 초기화 (옵션)
+    lastPositionRef.current = null;
+  };
+
+  // 🔥 초기화 함수 (새 검색어 입력 시 호출)
+  const resetFind = () => {
+    lastPositionRef.current = null;
+  };
+
+  return { find, resetFind };
+};
+
+
+
 import React, { useState } from "react";
 
 const FindPopup = ({ onSearch, onClose }) => {
