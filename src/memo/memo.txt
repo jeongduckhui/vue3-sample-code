@@ -17,3 +17,23 @@ decorator.datasource.p6spy.custom-log-message-format=\
 ===================
 spring.jpa.show-sql=false
 logging.level.p6spy=DEBUG 또는 logging.level.com.p6spy=DEBUG
+
+
+
+
+package com.example.demo.jasypt;
+
+import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
+
+public class JasyptDecryptor {
+
+    public static void main(String[] args) {
+        StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
+
+        encryptor.setPassword("네_암호키"); // 핵심
+
+        String decrypted = encryptor.decrypt("ENC값 안쪽 문자열");
+
+        System.out.println("복호화 결과: " + decrypted);
+    }
+}
