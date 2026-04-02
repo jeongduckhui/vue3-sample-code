@@ -1,39 +1,74 @@
-# p6spy 활성화
-decorator.datasource.p6spy.enable-logging=true
+package com.example.demo.cache.support;
 
-# slf4j
-decorator.datasource.p6spy.logging=slf4j
+import com.github.benmanes.caffeine.cache.Cache;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
-# multiline
-decorator.datasource.p6spy.multiline=true
+import java.util.Optional;
+import java.util.function.Supplier;
 
-# 핵심 설정
-decorator.datasource.p6spy.log-message-format=com.p6spy.engine.spy.appender.CustomLineFormat
+@Component
+@RequiredArgsConstructor
+public class CaffeineCacheSupport {
 
-# 파라미터 바인딩 출력
-decorator.datasource.p6spy.custom-log-message-format=\
-%(currentTime)|%(executionTime)ms|%(category)|%(sql)
+    /**
+     * 캐시 조회
+     */
+    public <K, V> Optional<V> get(Cache<K, V> cache, K key) {
+        return Optional.ofNullable(cache.getIfPresent(key));
+    }
 
-===================
-spring.jpa.show-sql=false
-logging.level.p6spy=DEBUG 또는 logging.level.com.p6spy=DEBUG
+    /**
+     * 캐시 조회 + 없으면 로딩
+     */
+    public <K, V> V getOrLoad(Cache<K, V> cache, K key, Supplier<V> loader) {
+        return cache.get(key, k -> loader.get());
+    }
 
+    /**
+     * 캐시 저장
+     */
+    public <K, V> void put(Cache<K, V> cache, K key, V value) {
+        cache.put(key, value);
+    }
 
+    /**
+     * 캐시 삭제
+     */
+    public <K, V> void evict(Cache<K, V> cache, K key) {
+        cache.invalidate(key);
+    }
 
-
-package com.example.demo.jasypt;
-
-import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
-
-public class JasyptDecryptor {
-
-    public static void main(String[] args) {
-        StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
-
-        encryptor.setPassword("네_암호키"); // 핵심
-
-        String decrypted = encryptor.decrypt("ENC값 안쪽 문자열");
-
-        System.out.println("복호화 결과: " + decrypted);
+    /**
+     * 전체 삭제
+     */
+    public <K, V> void evictAll(Cache<K, V> cache) {
+        cache.invalidateAll();
     }
 }
+
+
+@Service
+@RequiredArgsConstructor
+public class CommonCodeCacheService {
+
+    private final Cache<String, Object> cache;
+    private final CaffeineCacheSupport cacheSupport;
+
+    public Object get(String key) {
+        return cacheSupport.getOrLoad(cache, key, () -> loadFromDb(key));
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
