@@ -1,3 +1,21 @@
+public class RequestUtils {
+
+    public static HttpServletRequest getRequest() {
+        ServletRequestAttributes attrs =
+            (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        return (attrs != null) ? attrs.getRequest() : null;
+    }
+
+    public static String getHeader(String name) {
+        HttpServletRequest request = getRequest();
+        return (request != null) ? request.getHeader(name) : null;
+    }
+}
+
+
+
+
 
 
 package com.example.demo.cache.support;
