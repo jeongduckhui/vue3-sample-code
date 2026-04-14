@@ -2,7 +2,6 @@ window.onload = function () {
 
     const META_KEY = "META";
 
-    // Swagger UI 초기화 override
     window.ui = SwaggerUIBundle({
         url: "/v3/api-docs",
         dom_id: '#swagger-ui',
@@ -20,15 +19,16 @@ window.onload = function () {
             if (meta) {
                 req.headers['META'] = meta;
                 console.log("META 자동 주입:", meta);
+            } else {
+                console.warn("META 없음");
             }
 
             return req;
         }
     });
 
-    // ⭐ Authorize 입력값 localStorage 저장
+    // ⭐ Authorize 입력 감지 → localStorage 저장
     setTimeout(() => {
-
         document.body.addEventListener("change", function (e) {
 
             const input = e.target;
@@ -37,12 +37,12 @@ window.onload = function () {
 
                 const value = input.value;
 
-                if (value && value.length > 5) { // META 길이 조건
+                if (value && value.length > 5) {
                     localStorage.setItem(META_KEY, value);
                     console.log("META 저장:", value);
                 }
             }
         });
-
     }, 2000);
+
 };
