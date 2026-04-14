@@ -1,175 +1,48 @@
-public class RequestUtils {
+window.onload = function () {
 
-    public static HttpServletRequest getRequest() {
-        ServletRequestAttributes attrs =
-            (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+    const META_KEY = "META";
 
-        return (attrs != null) ? attrs.getRequest() : null;
-    }
+    // Swagger UI 초기화 override
+    window.ui = SwaggerUIBundle({
+        url: "/v3/api-docs",
+        dom_id: '#swagger-ui',
 
-    public static String getHeader(String name) {
-        HttpServletRequest request = getRequest();
-        return (request != null) ? request.getHeader(name) : null;
-    }
-}
+        presets: [
+            SwaggerUIBundle.presets.apis,
+            SwaggerUIStandalonePreset
+        ],
 
+        layout: "StandaloneLayout",
 
+        requestInterceptor: (req) => {
+            const meta = window.localStorage.getItem(META_KEY);
 
+            if (meta) {
+                req.headers['META'] = meta;
+                console.log("META 자동 주입:", meta);
+            }
 
-
-
-package com.example.demo.cache.support;
-
-import com.github.benmanes.caffeine.cache.Cache;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
-import java.util.Optional;
-import java.util.function.Supplier;
-
-@Slf4j
-@Component
-public class CaffeineCacheSupport {
-
-    /**
-     * 캐시 조회
-     */
-    public <K, V> Optional<V> get(Cache<K, V> cache, K key) {
-        V value = cache.getIfPresent(key);
-
-        if (value != null) {
-            log.debug("CACHE HIT key={}", key);
-        } else {
-            log.debug("CACHE MISS key={}", key);
+            return req;
         }
+    });
 
-        return Optional.ofNullable(value);
-    }
+    // ⭐ Authorize 입력값 localStorage 저장
+    setTimeout(() => {
 
-    /**
-     * 캐시 조회 + 없으면 로딩
-     */
-    public <K, V> V getOrLoad(Cache<K, V> cache, K key, Supplier<V> loader) {
+        document.body.addEventListener("change", function (e) {
 
-        V value = cache.getIfPresent(key);
+            const input = e.target;
 
-        if (value != null) {
-            log.debug("CACHE HIT key={}", key);
-            return value;
-        }
+            if (input && input.type === "text") {
 
-        log.debug("CACHE MISS → DB LOAD key={}", key);
+                const value = input.value;
 
-        V loadedValue = loader.get();
+                if (value && value.length > 5) { // META 길이 조건
+                    localStorage.setItem(META_KEY, value);
+                    console.log("META 저장:", value);
+                }
+            }
+        });
 
-        if (loadedValue != null) {
-            cache.put(key, loadedValue);
-        }
-
-        return loadedValue;
-    }
-
-    /**
-     * 캐시 저장
-     */
-    public <K, V> void put(Cache<K, V> cache, K key, V value) {
-        log.debug("CACHE PUT key={}", key);
-        cache.put(key, value);
-    }
-
-    /**
-     * 캐시 삭제
-     */
-    public <K, V> void evict(Cache<K, V> cache, K key) {
-        log.debug("CACHE EVICT key={}", key);
-        cache.invalidate(key);
-    }
-
-    /**
-     * 전체 삭제
-     */
-    public <K, V> void evictAll(Cache<K, V> cache) {
-        log.debug("CACHE EVICT ALL");
-        cache.invalidateAll();
-    }
-}
-
-
-
-
-
-
-package com.example.demo.cache.support;
-
-import com.github.benmanes.caffeine.cache.Cache;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-
-import java.util.Optional;
-import java.util.function.Supplier;
-
-@Component
-@RequiredArgsConstructor
-public class CaffeineCacheSupport {
-
-    /**
-     * 캐시 조회
-     */
-    public <K, V> Optional<V> get(Cache<K, V> cache, K key) {
-        return Optional.ofNullable(cache.getIfPresent(key));
-    }
-
-    /**
-     * 캐시 조회 + 없으면 로딩
-     */
-    public <K, V> V getOrLoad(Cache<K, V> cache, K key, Supplier<V> loader) {
-        return cache.get(key, k -> loader.get());
-    }
-
-    /**
-     * 캐시 저장
-     */
-    public <K, V> void put(Cache<K, V> cache, K key, V value) {
-        cache.put(key, value);
-    }
-
-    /**
-     * 캐시 삭제
-     */
-    public <K, V> void evict(Cache<K, V> cache, K key) {
-        cache.invalidate(key);
-    }
-
-    /**
-     * 전체 삭제
-     */
-    public <K, V> void evictAll(Cache<K, V> cache) {
-        cache.invalidateAll();
-    }
-}
-
-
-@Service
-@RequiredArgsConstructor
-public class CommonCodeCacheService {
-
-    private final Cache<String, Object> cache;
-    private final CaffeineCacheSupport cacheSupport;
-
-    public Object get(String key) {
-        return cacheSupport.getOrLoad(cache, key, () -> loadFromDb(key));
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
+    }, 2000);
+};
