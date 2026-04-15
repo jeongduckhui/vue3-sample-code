@@ -1,19 +1,32 @@
-@Component
-public class CustomBasicAuthFilter extends OncePerRequestFilter {
+public class CommonResponse {
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+    private String resultMsg;
+    private String errorMsg;
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    // 일반 조회용
+    private Object resultData;
 
-        if (auth != null && auth.isAuthenticated()) {
-            // ✅ 여기서 성공 처리
-            System.out.println("인증 성공: " + auth.getName());
+    // 페이징 조회용
+    private List<?> pagingData;
+    private Long pageNo;
+    private Long totalCount;
+
+    // QueryView용
+    private Object txInfo;
+    private List<String> queryList;
+
+    public static CommonResponse success(Object data) {
+        CommonResponse response = new CommonResponse();
+        response.setResultMsg("정상");
+
+        if (data instanceof PagingResponse<?> paging) {
+            response.setPagingData(paging.getPagingData());
+            response.setPageNo(paging.getPageNo());
+            response.setTotalCount(paging.getTotalCount());
+        } else {
+            response.setResultData(data);
         }
 
-        filterChain.doFilter(request, response);
+        return response;
     }
 }
