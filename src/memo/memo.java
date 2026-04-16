@@ -1,3 +1,31 @@
+package com.example.demo.common.paging;
+
+import java.util.List;
+
+public class PagingUtils {
+
+    public static <T> PagingResponse<T> toResponse(PagingDto dto,
+                                                   List<T> list,
+                                                   long totalCount) {
+
+        int pageNo = dto.getPageNo() < 1 ? 1 : dto.getPageNo();
+        int rowPerPage = dto.getRowPerPage() < 1 ? 10 : dto.getRowPerPage();
+
+        int totalPage = (int) Math.ceil((double) totalCount / rowPerPage);
+
+        return PagingResponse.<T>builder()
+                .pagingData(list)
+                .pageNo(pageNo)
+                .rowPerPage(rowPerPage)
+                .totalCount(totalCount)
+                .totalPage(totalPage)
+                .build();
+    }
+}
+
+
+
+
 public class CommonResponse {
 
     private String resultMsg;
