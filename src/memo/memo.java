@@ -1,3 +1,16 @@
+
+public static <T extends TotalCountSupport> long getTotalCount(List<T> list) {
+
+    if (list == null || list.isEmpty()) {
+        return 0;
+    }
+
+    return list.get(0).getTotCnt();
+}
+
+
+
+
 package com.example.demo.common.paging;
 
 import java.util.List;
