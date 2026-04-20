@@ -1,3 +1,20 @@
+@Configuration
+@RequiredArgsConstructor
+public class MyBatisBatchConfig {
+
+    private final SqlSessionFactory sqlSessionFactory;
+
+    @Bean
+    public SqlSessionTemplate batchSqlSessionTemplate() {
+        return new SqlSessionTemplate(sqlSessionFactory, ExecutorType.BATCH);
+    }
+}
+
+
+
+
+
+
 
 public static <T extends TotalCountSupport> long getTotalCount(List<T> list) {
 
