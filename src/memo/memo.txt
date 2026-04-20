@@ -1,48 +1,52 @@
-window.onload = function () {
-
-    const META_KEY = "META";
-
-    window.ui = SwaggerUIBundle({
-        url: "/v3/api-docs",
-        dom_id: '#swagger-ui',
-
-        presets: [
-            SwaggerUIBundle.presets.apis,
-            SwaggerUIStandalonePreset
-        ],
-
-        layout: "StandaloneLayout",
-
-        requestInterceptor: (req) => {
-            const meta = window.localStorage.getItem(META_KEY);
-
-            if (meta) {
-                req.headers['META'] = meta;
-                console.log("META 자동 주입:", meta);
-            } else {
-                console.warn("META 없음");
-            }
-
-            return req;
-        }
-    });
-
-    // ⭐ Authorize 입력 감지 → localStorage 저장
-    setTimeout(() => {
-        document.body.addEventListener("change", function (e) {
-
-            const input = e.target;
-
-            if (input && input.type === "text") {
-
-                const value = input.value;
-
-                if (value && value.length > 5) {
-                    localStorage.setItem(META_KEY, value);
-                    console.log("META 저장:", value);
-                }
-            }
-        });
-    }, 2000);
-
+const changedRows = {
+  added: [],
+  updated: [],
+  deleted: []
 };
+
+
+
+const onCellValueChanged = (params) => {
+  const row = params.data;
+
+  if (!row._status) {
+    row._status = "U"; // update
+  }
+
+  // 이미 있는지 체크
+  const exists = changedRows.updated.find(r => r.id === row.id);
+  if (!exists) {
+    changedRows.updated.push(row);
+  }
+};
+
+
+
+const onCellValueChanged = (params) => {
+  const row = params.data;
+
+  if (!row._status) {
+    row._status = "U"; // update
+  }
+
+  // 이미 있는지 체크
+  const exists = changedRows.updated.find(r => r.id === row.id);
+  if (!exists) {
+    changedRows.updated.push(row);
+  }
+};
+
+
+
+
+const save = async () => {
+  const payload = {
+    added: changedRows.added,
+    updated: changedRows.updated,
+    deleted: changedRows.deleted
+  };
+
+  await api.post("/save", payload);
+};
+
+
