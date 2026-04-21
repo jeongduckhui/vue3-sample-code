@@ -1,12 +1,56 @@
+package com.example.demo.common.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.MappedSuperclass;
+import lombok.Getter;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
+
+@Getter
+@MappedSuperclass
+@EntityListeners(AuditingEntityListener.class)
+public abstract class BaseEntity {
+
+    @CreatedBy
+    @Column(name = "CREATED_BY", updatable = false)
+    private String createdBy;
+
+    @CreatedDate
+    @Column(name = "CREATED_AT", updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedBy
+    @Column(name = "UPDATED_BY")
+    private String updatedBy;
+
+    @LastModifiedDate
+    @Column(name = "UPDATED_AT")
+    private LocalDateTime updatedAt;
+}
+
+
 @Configuration
-@RequiredArgsConstructor
-public class MyBatisBatchConfig {
+@EnableJpaAuditing
+public class JpaConfig {
+}
 
-    private final SqlSessionFactory sqlSessionFactory;
 
-    @Bean
-    public SqlSessionTemplate batchSqlSessionTemplate() {
-        return new SqlSessionTemplate(sqlSessionFactory, ExecutorType.BATCH);
+
+
+
+@Component
+public class AuditorAwareImpl implements org.springframework.data.domain.AuditorAware<String> {
+
+    @Override
+    public Optional<String> getCurrentAuditor() {
+        return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .map(auth -> auth.getName()); // userId
     }
 }
 
@@ -16,75 +60,4 @@ public class MyBatisBatchConfig {
 
 
 
-public static <T extends TotalCountSupport> long getTotalCount(List<T> list) {
 
-    if (list == null || list.isEmpty()) {
-        return 0;
-    }
-
-    return list.get(0).getTotCnt();
-}
-
-
-
-
-package com.example.demo.common.paging;
-
-import java.util.List;
-
-public class PagingUtils {
-
-    public static <T> PagingResponse<T> toResponse(PagingDto dto,
-                                                   List<T> list,
-                                                   long totalCount) {
-
-        int pageNo = dto.getPageNo() < 1 ? 1 : dto.getPageNo();
-        int rowPerPage = dto.getRowPerPage() < 1 ? 10 : dto.getRowPerPage();
-
-        int totalPage = (int) Math.ceil((double) totalCount / rowPerPage);
-
-        return PagingResponse.<T>builder()
-                .pagingData(list)
-                .pageNo(pageNo)
-                .rowPerPage(rowPerPage)
-                .totalCount(totalCount)
-                .totalPage(totalPage)
-                .build();
-    }
-}
-
-
-
-
-public class CommonResponse {
-
-    private String resultMsg;
-    private String errorMsg;
-
-    // 일반 조회용
-    private Object resultData;
-
-    // 페이징 조회용
-    private List<?> pagingData;
-    private Long pageNo;
-    private Long totalCount;
-
-    // QueryView용
-    private Object txInfo;
-    private List<String> queryList;
-
-    public static CommonResponse success(Object data) {
-        CommonResponse response = new CommonResponse();
-        response.setResultMsg("정상");
-
-        if (data instanceof PagingResponse<?> paging) {
-            response.setPagingData(paging.getPagingData());
-            response.setPageNo(paging.getPageNo());
-            response.setTotalCount(paging.getTotalCount());
-        } else {
-            response.setResultData(data);
-        }
-
-        return response;
-    }
-}
