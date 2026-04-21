@@ -1,3 +1,22 @@
+
+@Component
+public class AuditorAwareImpl implements AuditorAware<String> {
+
+    @Override
+    public Optional<String> getCurrentAuditor() {
+
+        SessionUserInfo user = SessionUserContext.get();
+
+        if (user == null) {
+            return Optional.of("SYSTEM"); // 또는 Optional.empty()
+        }
+
+        return Optional.of(user.getUserId());
+    }
+}
+
+
+
 package com.example.demo.common.entity;
 
 import jakarta.persistence.Column;
