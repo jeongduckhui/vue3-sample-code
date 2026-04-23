@@ -88,3 +88,24 @@ public class QuerydslConfig {
     }
 }
 
+
+
+
+
+
+
+@RequiredArgsConstructor
+@Repository
+public class UserRepositoryCustom {
+
+    private final JPAQueryFactory queryFactory;
+
+    public List<User> findByName(String name) {
+        QUser user = QUser.user;
+
+        return queryFactory
+                .selectFrom(user)
+                .where(user.name.eq(name))
+                .fetch();
+    }
+}
