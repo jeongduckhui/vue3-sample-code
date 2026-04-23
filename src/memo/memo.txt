@@ -1,126 +1,142 @@
-package com.example.demo.calendar.repository;
+<select id="selectUserList" resultType="com.example.demo.user.dto.UserDto">
 
-import com.example.demo.calendar.entity.MadCalendar;
-import org.springframework.data.jpa.repository.JpaRepository;
+SELECT
+    u.USER_ID,
+    u.USER_NAME,
+    d.DEPT_NAME,
 
-public interface MadCalendarRepository
-        extends JpaRepository<MadCalendar, String>,
-                MadCalendarRepositoryCustom {
+    NVL(u.AGE, 0) AS AGE,
+
+    DECODE(u.STATUS, 'A', 'ACTIVE', 'I', 'INACTIVE', 'UNKNOWN') AS STATUS_NAME
+
+FROM USER u
+JOIN DEPT d ON u.DEPT_ID = d.DEPT_ID
+
+WHERE 1=1
+
+<!-- 이름 LIKE -->
+<if test="name != null and name != ''">
+    AND u.USER_NAME LIKE '%' || #{name} || '%'
+</if>
+
+<!-- 부서 IN -->
+<if test="deptIds != null and deptIds.size() > 0">
+    AND u.DEPT_ID IN
+    <foreach collection="deptIds" item="deptId" open="(" separator="," close=")">
+        #{deptId}
+    </foreach>
+</if>
+
+<!-- 상태 조건 -->
+<if test="status != null and status != ''">
+    AND u.STATUS = #{status}
+</if>
+
+ORDER BY
+    u.CREATED_AT DESC
+
+</select>
+
+
+
+
+package com.example.demo.user.dto;
+
+public record UserDto(
+        String userId,
+        String userName,
+        String deptName,
+        Integer age,
+        String statusName
+) {
 }
 
 
 
 
 
-package com.example.demo.calendar.repository;
 
-import com.example.demo.calendar.dto.CalendarDto;
+package com.example.demo.user.repository;
+
+import com.example.demo.user.dto.UserDto;
 
 import java.util.List;
 
-public interface MadCalendarRepositoryCustom {
+public interface UserRepositoryCustom {
 
-    List<CalendarDto> findCalendar();
+    List<UserDto> search(UserSearchCond cond);
 }
 
 
 
 
-package com.example.demo.calendar.repository;
 
-import com.example.demo.calendar.dto.CalendarDto;
-import com.example.demo.calendar.entity.QMadCalendar;
-import com.querydsl.core.types.dsl.Expressions;
+
+package com.example.demo.user.repository;
+
+import com.example.demo.user.dto.UserDto;
+import com.example.demo.user.dto.UserSearchCond;
+import com.example.demo.user.entity.QDept;
+import com.example.demo.user.entity.QUser;
+import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.*;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @RequiredArgsConstructor
-public class MadCalendarRepositoryImpl implements MadCalendarRepositoryCustom {
+public class UserRepositoryImpl implements UserRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<CalendarDto> findCalendar() {
+    public List<UserDto> search(UserSearchCond cond) {
 
-        QMadCalendar calendar = QMadCalendar.madCalendar;
-
-        // Java에서 계산 (실무 추천)
-        String endYear = String.valueOf(
-                LocalDate.now().plusMonths(60).getYear()
-        );
+        QUser user = QUser.user;
+        QDept dept = QDept.dept;
 
         return queryFactory
-                .select(
-                        com.querydsl.core.types.Projections.constructor(
-                                CalendarDto.class,
-                                Expressions.stringTemplate(
-                                        "substr({0}, 5, 6)",
-                                        calendar.workYw
-                                ),
-                                calendar.wwSeq
-                        )
-                )
-                .from(calendar)
+                .select(Projections.constructor(
+                        UserDto.class,
+                        user.userId,
+                        user.userName,
+                        dept.deptName,
+
+                        // NVL
+                        user.age.coalesce(0),
+
+                        // DECODE
+                        new CaseBuilder()
+                                .when(user.status.eq("A")).then("ACTIVE")
+                                .when(user.status.eq("I")).then("INACTIVE")
+                                .otherwise("UNKNOWN")
+                ))
+                .from(user)
+                .join(dept).on(user.deptId.eq(dept.deptId))
                 .where(
-                        calendar.baseYear.between("2008", endYear)
+                        nameLike(cond.name, user),
+                        deptIn(cond.deptIds, user),
+                        statusEq(cond.status, user)
                 )
-                .orderBy(
-                        calendar.baseYear.asc(),
-                        calendar.baseMm.asc(),
-                        calendar.baseDay.asc()
-                )
+                .orderBy(user.createdAt.desc())
                 .fetch();
     }
-}
 
+    private BooleanExpression nameLike(String name, QUser user) {
+        return (name == null || name.isEmpty()) ? null : user.userName.contains(name);
+    }
 
+    private BooleanExpression deptIn(List<String> deptIds, QUser user) {
+        return (deptIds == null || deptIds.isEmpty()) ? null : user.deptId.in(deptIds);
+    }
 
-
-
-
-
-
-
-package com.example.demo.calendar.service;
-
-import com.example.demo.calendar.dto.CalendarDto;
-import com.example.demo.calendar.repository.MadCalendarRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-@Service
-@RequiredArgsConstructor
-public class CalendarService {
-
-    private final MadCalendarRepository repository;
-
-    public List<CalendarDto> getCalendar() {
-        return repository.findCalendar();
+    private BooleanExpression statusEq(String status, QUser user) {
+        return (status == null || status.isEmpty()) ? null : user.status.eq(status);
     }
 }
 
 
-
-
-
-
-
-
-
-
-
-package com.example.demo.calendar.dto;
-
-public record CalendarDto(
-        String workYw,
-        Integer wwSeq
-) {
-}
 
 
 
