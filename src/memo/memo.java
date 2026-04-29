@@ -1,26 +1,31 @@
-QMadBbs a = QMadBbs.madBbs;
-QMadUserBbsPopupRestr b = QMadUserBbsPopupRestr.madUserBbsPopupRestr;
+public class WeeklyStatsResponse {
 
-List<MadBbs> result = queryFactory
-    .selectFrom(a)
-    .where(
-        JPAExpressions
-            .selectOne()
-            .from(b)
-            .where(
-                b.bbsNo.eq(a.postNo),
-                b.userId.eq(userId),
+    private String userId;
 
-                // 👉 날짜 조건 추가
-                Expressions.stringTemplate(
-                    "to_char({0}, 'YYYYMMDD')",
-                    b.reqTm
-                ).eq(
-                    Expressions.stringTemplate(
-                        "to_char(sysdate, 'YYYYMMDD')"
-                    )
-                )
-            )
-            .notExists()
-    )
-    .fetch();
+    // key: week (예: 2024W01)
+    // value: 값 (예: 매출, 건수 등)
+    private Map<String, Integer> weekData = new LinkedHashMap<>();
+
+}
+
+
+==========================
+
+
+{
+  "userId": "A001",
+  "weekData": {
+    "2024W01": 10,
+    "2024W02": 15,
+    "2024W03": 8
+  }
+}
+
+
+Map<String, Integer> map = result.stream()
+    .collect(Collectors.toMap(
+        r -> r.getWeek(),
+        r -> r.getValue(),
+        (a, b) -> b,
+        LinkedHashMap::new
+    ));
