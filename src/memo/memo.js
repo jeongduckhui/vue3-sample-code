@@ -317,21 +317,269 @@ public class PagingSampleController {
 
 
 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+[ persistable 적용 저장 ]
+
+
+package com.example.demo.user.domain;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import org.springframework.data.domain.Persistable;
+
+@Entity
+@Getter
+@Table(name = "users")
+public class User implements Persistable<String> {
+
+    @Id
+    private String userId;
+
+    private String name;
+
+    @Transient
+    private boolean isNew = true;
+
+    protected User() {}
+
+    public User(String userId, String name, boolean isNew) {
+        this.userId = userId;
+        this.name = name;
+        this.isNew = isNew;
+    }
+
+    public void update(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String getId() {
+        return userId;
+    }
+
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
+
+    @PostLoad
+    @PostPersist
+    public void markNotNew() {
+        this.isNew = false;
+    }
+}
 
 
 
+package com.example.demo.user.dto;
+
+import lombok.Getter;
+
+@Getter
+public class UserSaveRowDto {
+
+    private String userId;
+    private String name;
+    private String rowType; 
+    // INSERT / UPDATE / DELETE
+}
+
+
+[ 일반 레포지토리 ]
+package com.example.demo.user.repository;
+
+import com.example.demo.user.domain.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserRepository extends JpaRepository<User, String> {
+}
+
+
+[ bulk용 레포지토리 ]
+package com.example.demo.user.repository;
+
+import jakarta.persistence.EntityManager;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+
+@Repository
+@RequiredArgsConstructor
+public class UserBulkRepository {
+
+    private final EntityManager em;
+
+    public void bulkUpdate(String userId, String name) {
+
+        em.createQuery("""
+            update User u
+            set u.name = :name
+            where u.userId = :userId
+        """)
+        .setParameter("name", name)
+        .setParameter("userId", userId)
+        .executeUpdate();
+    }
+
+    public void bulkDelete(String userId) {
+
+        em.createQuery("""
+            delete from User u
+            where u.userId = :userId
+        """)
+        .setParameter("userId", userId)
+        .executeUpdate();
+    }
+}
+
+
+[ 일반 서비스 ]
+package com.example.demo.user.service;
+
+import com.example.demo.user.domain.User;
+import com.example.demo.user.dto.UserSaveRowDto;
+import com.example.demo.user.repository.UserBulkRepository;
+import com.example.demo.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import jakarta.persistence.EntityManager;
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class UserService {
+
+    private final UserRepository userRepository;
+    private final UserBulkRepository bulkRepository;
+    private final EntityManager em;
+
+    @Transactional
+    public void saveAll(List<UserSaveRowDto> rows) {
+
+        List<User> insertList = new ArrayList<>();
+        List<UserSaveRowDto> updateList = new ArrayList<>();
+        List<String> deleteList = new ArrayList<>();
+
+        // 분류
+        for (UserSaveRowDto row : rows) {
+
+            switch (row.getRowType()) {
+
+                case "INSERT" -> insertList.add(
+                        new User(row.getUserId(), row.getName(), true)
+                );
+
+                case "UPDATE" -> updateList.add(row);
+
+                case "DELETE" -> deleteList.add(row.getUserId());
+            }
+        }
+
+        // INSERT (Persistable 활용)
+        if (!insertList.isEmpty()) {
+            userRepository.saveAll(insertList);
+        }
+
+        // UPDATE (Dirty Checking 방식)
+        for (UserSaveRowDto row : updateList) {
+
+            User user = userRepository.findById(row.getUserId())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자"));
+
+            user.update(row.getName());
+        }
+
+        // DELETE (일괄 삭제)
+        if (!deleteList.isEmpty()) {
+            userRepository.deleteAllByIdInBatch(deleteList);
+        }
+    }
+}
 
 
 
+[ bulk용 서비스 ]
+package com.example.demo.user.service;
+
+import com.example.demo.user.domain.User;
+import com.example.demo.user.dto.UserSaveRowDto;
+import com.example.demo.user.repository.UserBulkRepository;
+import com.example.demo.user.repository.UserRepository;
+import jakarta.persistence.EntityManager;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class UserBulkService {
+
+    private final UserRepository userRepository;
+    private final UserBulkRepository bulkRepository;
+    private final EntityManager em;
+
+    @Transactional
+    public void saveAll(List<UserSaveRowDto> rows) {
+
+        List<User> insertList = new ArrayList<>();
+
+        for (UserSaveRowDto row : rows) {
+
+            switch (row.getRowType()) {
+
+                case "INSERT" -> insertList.add(
+                        new User(row.getUserId(), row.getName(), true)
+                );
+
+                case "UPDATE" -> bulkRepository.bulkUpdate(
+                        row.getUserId(), row.getName()
+                );
+
+                case "DELETE" -> bulkRepository.bulkDelete(
+                        row.getUserId()
+                );
+            }
+        }
+
+        // INSERT 처리
+        if (!insertList.isEmpty()) {
+            userRepository.saveAll(insertList);
+        }
+
+        // 필수 (영속성 컨텍스트 초기화)
+        em.flush();
+        em.clear();
+    }
+}
 
 
+package com.example.demo.user.controller;
 
+import com.example.demo.user.dto.UserSaveRowDto;
+import com.example.demo.user.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/users")
+public class UserController {
 
+    private final UserService userService;
 
-
-
+    @PostMapping("/save")
+    public void save(@RequestBody List<UserSaveRowDto> rows) {
+        userService.saveAll(rows);
+    }
+}
 
 
 
