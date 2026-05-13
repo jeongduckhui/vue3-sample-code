@@ -1,31 +1,27 @@
+@Service
+@RequiredArgsConstructor
 @Transactional
-public void updateAll(
-        List<UserRoleUpdateRequest> requests
-) {
+public class UserRoleService {
 
-    List<UserRoleId> ids = requests.stream()
-            .map(UserRoleUpdateRequest::toId)
-            .toList();
+    private final UserRoleRepository repository;
 
-    Map<UserRoleId, UserRole> entityMap =
-            repository.findAllById(ids)
-                    .stream()
-                    .collect(Collectors.toMap(
-                            UserRole::getId,
-                            Function.identity()
-                    ));
+    public void update(UserRoleUpdateRequest request) {
 
-    for (UserRoleUpdateRequest request : requests) {
-
-        UserRole entity = entityMap.get(request.toId());
-
-        if (entity == null) {
-            continue;
-        }
-
-        entity.update(
-                request.getUseYn(),
-                request.getRemark()
+        // 1. 복합키 생성
+        UserRoleId id = new UserRoleId(
+                request.getUserId(),
+                request.getRoleId()
         );
+
+        // 2. 조회
+        UserRole entity = repository.findById(id)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("데이터 없음"));
+
+        // 3. 값 변경 (Dirty Checking)
+        entity.setRoleName(request.getRoleName());
+        entity.setUseYn(request.getUseYn());
+
+        // save() 호출 안해도 됨
     }
 }
