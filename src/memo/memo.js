@@ -1,35 +1,31 @@
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+@Transactional
+public void updateAll(
+        List<UserRoleUpdateRequest> requests
+) {
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+    List<UserRoleId> ids = requests.stream()
+            .map(UserRoleUpdateRequest::toId)
+            .toList();
 
-public class ObjectConvertUtil {
+    Map<UserRoleId, UserRole> entityMap =
+            repository.findAllById(ids)
+                    .stream()
+                    .collect(Collectors.toMap(
+                            UserRole::getId,
+                            Function.identity()
+                    ));
 
-    private static final ObjectMapper mapper = new ObjectMapper();
+    for (UserRoleUpdateRequest request : requests) {
 
-    public static <T> List<Map<String, Object>> toMapList(List<T> dtoList) {
+        UserRole entity = entityMap.get(request.toId());
 
-        return dtoList.stream()
-                .map(dto -> mapper.convertValue(
-                        dto,
-                        new TypeReference<Map<String, Object>>() {}
-                ))
-                .collect(Collectors.toList());
+        if (entity == null) {
+            continue;
+        }
+
+        entity.update(
+                request.getUseYn(),
+                request.getRemark()
+        );
     }
 }
-
-
-
-=================
-
-  List<UserDto> dtoList = List.of(
-        new UserDto("kim", "김철수"),
-        new UserDto("lee", "이영희")
-);
-
-List<Map<String, Object>> result =
-        ObjectConvertUtil.toMapList(dtoList);
-
-System.out.println(result);
