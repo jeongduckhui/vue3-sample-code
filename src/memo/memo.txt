@@ -1,8 +1,98 @@
-Querydsl(JPA)은 JPQL 기반이며, JPQL은 UNION/UNION ALL 문법을 지원하지 않는다. 따라서 UNION이 포함된 쿼리는 Querydsl로 표현할 수 없다.
-UNION은 서로 다른 결과 집합을 병합하는 SQL 연산으로, 엔티티 중심의 ORM 모델과 구조적으로 맞지 않는다.
-UNION을 Querydsl로 구현하려면 개별 조회 후 애플리케이션에서 병합하거나 Native Query를 사용해야 하며, 이 경우 정렬·페이징 처리 및 성능 측면에서 문제가 발생하거나 Querydsl 사용 이점이 사라진다.
-JPQL은 FROM 절에 서브쿼리(인라인뷰)를 허용하지 않는다. 따라서 FROM (SELECT ...) 형태의 구조는 Querydsl로 표현할 수 없다.
-Querydsl의 서브쿼리는 WHERE 절 등 제한된 위치에서만 사용 가능하며, FROM 절 기반의 다단계 인라인뷰 구조는 지원하지 않는다.
-2depth 이상 인라인뷰는 가상 테이블(alias) 간 단계적 연결 구조를 필요로 하나, Querydsl은 엔티티 기반 alias 중심이라 이러한 구조를 안정적으로 표현하기 어렵다.
-인라인뷰는 필터링, 집계, 실행계획 최적화를 위해 SQL 레벨에서 구조적으로 설계되는 경우가 많으며, 이를 Querydsl로 전환하면 해당 구조와 튜닝 포인트가 코드 내부로 숨겨진다.
-UNION 및 다단계 인라인뷰가 포함된 쿼리는 일반적으로 통계/리포트/성능 민감 영역에 해당하며, SQL 중심으로 관리하는 것이 적합하다.
+[
+  {
+    "field": "categoryName",
+    "headerName": "구분",
+    "parentHeader": null,
+    "level": 0,
+    "headerPath": ["구분"],
+    "required": true,
+    "exampleValue": "구분1",
+    "dataType": "STRING",
+    "hidden": false,
+    "order": 1
+  },
+  {
+    "field": "appName",
+    "headerName": "APP",
+    "parentHeader": null,
+    "level": 0,
+    "headerPath": ["APP"],
+    "required": true,
+    "exampleValue": "APP-A",
+    "dataType": "STRING",
+    "hidden": false,
+    "order": 2
+  },
+  {
+    "field": "gaNgaType",
+    "headerName": "GA/NGA",
+    "parentHeader": null,
+    "level": 0,
+    "headerPath": ["GA/NGA"],
+    "required": true,
+    "exampleValue": "GA",
+    "dataType": "STRING",
+    "hidden": false,
+    "order": 3
+  },
+  {
+    "field": "customerName",
+    "headerName": "CUSTOMER",
+    "parentHeader": null,
+    "level": 0,
+    "headerPath": ["CUSTOMER"],
+    "required": true,
+    "exampleValue": "삼성전자",
+    "dataType": "STRING",
+    "hidden": false,
+    "order": 4
+  },
+  {
+    "field": "QTY_Q202601",
+    "headerName": "1M",
+    "parentHeader": "2026",
+    "level": 2,
+    "headerPath": ["QTY", "2026", "1M"],
+    "required": false,
+    "exampleValue": "100",
+    "dataType": "NUMBER",
+    "hidden": false,
+    "order": 5
+  },
+  {
+    "field": "QTY_Q202602",
+    "headerName": "2M",
+    "parentHeader": "2026",
+    "level": 2,
+    "headerPath": ["QTY", "2026", "2M"],
+    "required": false,
+    "exampleValue": "100",
+    "dataType": "NUMBER",
+    "hidden": false,
+    "order": 6
+  },
+  {
+    "field": "AMT_Q202601",
+    "headerName": "1M",
+    "parentHeader": "2026",
+    "level": 2,
+    "headerPath": ["AMT", "2026", "1M"],
+    "required": false,
+    "exampleValue": "1000",
+    "dataType": "NUMBER",
+    "hidden": false,
+    "order": 7
+  },
+  {
+    "field": "AMT_Q202602",
+    "headerName": "2M",
+    "parentHeader": "2026",
+    "level": 2,
+    "headerPath": ["AMT", "2026", "2M"],
+    "required": false,
+    "exampleValue": "1000",
+    "dataType": "NUMBER",
+    "hidden": false,
+    "order": 8
+  }
+]
