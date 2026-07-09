@@ -1,187 +1,137 @@
-public class WeeklyStatsResponse {
+@Service
+public class ExcelDrmParsedTextService {
 
-    private String userId;
+    public ExcelUploadPreviewResult parseToPreviewResult(
+            String parsedText,
+            List<ExcelColumnMeta> columns
+    ) {
+        List<List<String>> table = parseTsv(parsedText);
 
-    // key: week (예: 2024W01)
-    // value: 값 (예: 매출, 건수 등)
-    private Map<String, Integer> weekData = new LinkedHashMap<>();
-
-}
-
-
-==========================
-
-
-{
-  "userId": "A001",
-  "weekData": {
-    "2024W01": 10,
-    "2024W02": 15,
-    "2024W03": 8
-  }
-}
-
-
-Map<String, Integer> map = result.stream()
-    .collect(Collectors.toMap(
-        r -> r.getWeek(),
-        r -> r.getValue(),
-        (a, b) -> b,
-        LinkedHashMap::new
-    ));
-===================================================================================================
-
-    @Getter
-@AllArgsConstructor
-public class StatsResponse {
-
-    private String userId;
-    private String region;
-    private String userName;
-
-    private Map<String, Integer> weekData;
-}
-
-
-public List<StatsResponse> getStats() {
-
-    List<Map<String, Object>> rows = repository.findAll();
-
-    List<StatsResponse> result = new ArrayList<>();
-
-    for (Map<String, Object> row : rows) {
-
-        // 1. 고정 컬럼 추출
-        String userId = (String) row.get("userId");
-        String region = (String) row.get("region");
-        String userName = (String) row.get("userName");
-
-        // 2. 동적 컬럼 (주차) 추출
-        Map<String, Integer> weekMap = new LinkedHashMap<>();
-
-        for (Map.Entry<String, Object> entry : row.entrySet()) {
-
-            String key = entry.getKey();
-
-            // 고정 컬럼 제외
-            if ("userId".equals(key) || "region".equals(key) || "userName".equals(key)) {
-                continue;
-            }
-
-            // 주차 컬럼만 필터링 (패턴 기준)
-            if (key.endsWith("W")) {
-                Integer value = entry.getValue() != null
-                    ? ((Number) entry.getValue()).intValue()
-                    : 0;
-
-                weekMap.put(key, value);
-            }
+        if (table.isEmpty()) {
+            return ExcelUploadPreviewResult.empty(columns);
         }
 
-        result.add(new StatsResponse(userId, region, userName, weekMap));
+        List<String> excelHeaders = table.get(0);
+
+        Map<Integer, ExcelColumnMeta> columnIndexMetaMap =
+                matchHeaders(excelHeaders, columns);
+
+        List<Map<String, Object>> rows =
+                bindRows(table, columnIndexMetaMap);
+
+        List<ExcelValidationError> errors =
+                validateHeader(excelHeaders, columns);
+
+        return ExcelUploadPreviewResult.builder()
+                .columns(columns)
+                .rows(rows)
+                .errors(errors)
+                .totalCount(rows.size())
+                .validCount(rows.size() - errors.size())
+                .errorCount(errors.size())
+                .build();
     }
 
-    return result;
-}
+    private List<List<String>> parseTsv(String text) {
+        if (text == null || text.isBlank()) {
+            return List.of();
+        }
 
-
-#####################################################################################
-
-
-
-package com.example.demo.util;
-
-import java.util.*;
-import java.util.function.Predicate;
-
-public class WeekDataExtractor {
-
-    private WeekDataExtractor() {
-        // 유틸 클래스라서 생성자 막음
+        return Arrays.stream(text.split("\\R", -1))
+                .filter(line -> !line.isBlank())
+                .map(line -> Arrays.asList(line.split("\\t", -1)))
+                .toList();
     }
 
-    /**
-     * row(Map)에서 동적 주차 컬럼을 추출하여 Map으로 반환
-     *
-     * @param row            DB 조회 결과 row
-     * @param excludeColumns 제외할 고정 컬럼
-     * @param keyFilter      주차 컬럼 필터 조건 (예: yyyyMMddW)
-     * @return 주차 Map (순서 유지)
-     */
-    public static Map<String, Integer> extract(
-            Map<String, Object> row,
-            Set<String> excludeColumns,
-            Predicate<String> keyFilter
+    private Map<Integer, ExcelColumnMeta> matchHeaders(
+            List<String> excelHeaders,
+            List<ExcelColumnMeta> columns
     ) {
+        Map<String, ExcelColumnMeta> metaMap = columns.stream()
+                .filter(column -> !column.isHidden())
+                .collect(Collectors.toMap(
+                        column -> normalizeHeader(column.getHeaderName()),
+                        Function.identity(),
+                        (first, second) -> first
+                ));
 
-        Map<String, Integer> result = new LinkedHashMap<>();
+        Map<Integer, ExcelColumnMeta> result = new LinkedHashMap<>();
 
-        for (Map.Entry<String, Object> entry : row.entrySet()) {
+        for (int i = 0; i < excelHeaders.size(); i++) {
+            String excelHeader = normalizeHeader(excelHeaders.get(i));
+            ExcelColumnMeta meta = metaMap.get(excelHeader);
 
-            String key = entry.getKey();
-
-            // 1. 제외 컬럼 skip
-            if (excludeColumns.contains(key)) {
-                continue;
+            if (meta != null) {
+                result.put(i, meta);
             }
-
-            // 2. 필터 조건 (주차 컬럼)
-            if (!keyFilter.test(key)) {
-                continue;
-            }
-
-            // 3. 값 변환 (null 방어)
-            Object rawValue = entry.getValue();
-
-            Integer value = (rawValue != null)
-                    ? ((Number) rawValue).intValue()
-                    : 0;
-
-            result.put(key, value);
         }
 
         return result;
     }
-}
 
+    private List<Map<String, Object>> bindRows(
+            List<List<String>> table,
+            Map<Integer, ExcelColumnMeta> columnIndexMetaMap
+    ) {
+        List<Map<String, Object>> rows = new ArrayList<>();
 
------------------------------------
+        for (int rowIndex = 1; rowIndex < table.size(); rowIndex++) {
+            List<String> cells = table.get(rowIndex);
 
+            Map<String, Object> row = new LinkedHashMap<>();
 
-    public List<StatsResponse> getStats() {
+            for (Map.Entry<Integer, ExcelColumnMeta> entry : columnIndexMetaMap.entrySet()) {
+                int cellIndex = entry.getKey();
+                ExcelColumnMeta meta = entry.getValue();
 
-    List<Map<String, Object>> rows = repository.findAll();
+                String value = cellIndex < cells.size() ? cells.get(cellIndex) : "";
 
-    List<StatsResponse> result = new ArrayList<>();
+                row.put(meta.getField(), value);
+            }
 
-    for (Map<String, Object> row : rows) {
+            row.put("_rowStatus", "NORMAL");
+            row.put("_rowIndex", rowIndex + 1);
 
-        // 1. 고정 컬럼
-        String userId = (String) row.get("userId");
-        String region = (String) row.get("region");
-        String userName = (String) row.get("userName");
+            rows.add(row);
+        }
 
-        // 2. 주차 데이터 추출 
-        Map<String, Integer> weekMap =
-                WeekDataExtractor.extract(
-                        row,
-                        Set.of("userId", "region", "userName"),
-                        key -> key.matches("\\d{8}W") // 20250101W 형태
-                );
-
-        // 3. DTO 세팅
-        result.add(new StatsResponse(userId, region, userName, weekMap));
+        return rows;
     }
 
-    return result;
+    private List<ExcelValidationError> validateHeader(
+            List<String> excelHeaders,
+            List<ExcelColumnMeta> columns
+    ) {
+        Set<String> uploadedHeaders = excelHeaders.stream()
+                .map(this::normalizeHeader)
+                .collect(Collectors.toSet());
+
+        List<ExcelValidationError> errors = new ArrayList<>();
+
+        for (ExcelColumnMeta column : columns) {
+            if (column.isRequired()
+                    && !uploadedHeaders.contains(normalizeHeader(column.getHeaderName()))) {
+
+                errors.add(ExcelValidationError.builder()
+                        .rowIndex(0)
+                        .field(column.getField())
+                        .headerName(column.getHeaderName())
+                        .message("필수 컬럼이 누락되었습니다.")
+                        .build());
+            }
+        }
+
+        return errors;
+    }
+
+    private String normalizeHeader(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return value
+                .replace("\uFEFF", "")
+                .replaceAll("\\s+", "")
+                .trim();
+    }
 }
-
-
-------------------------
-
-    Map<String, Integer> weekMap =
-    WeekDataExtractor.extract(
-        row,
-        Set.of("empId", "deptName", "jobGrade"),
-        key -> key.endsWith("W")
-    );
