@@ -1,87 +1,113 @@
-@Service
-public class DrmParsedTableService {
+function parseDynamicColumnField(field) {
+  /*
+   * 기준기간
+   *
+   * Y2026_sale
+   * H202601_sale
+   * Q202601_sale
+   * M202601_sale
+   */
+  const baseMatch = field.match(
+    /^(Y|H|Q|M)(\d{4})(\d{2})?_(.+)$/i,
+  );
 
-    public DrmParsedTable parse(String parsedText) {
-        if (parsedText == null || parsedText.isBlank()) {
-            return DrmParsedTable.builder()
-                    .headers(List.of())
-                    .rows(List.of())
-                    .build();
-        }
+  if (baseMatch) {
+    const [
+      ,
+      periodTypeText,
+      year,
+      periodNumberText,
+      businessCode,
+    ] = baseMatch;
 
-        List<List<String>> table = Arrays.stream(parsedText.split("\\R", -1))
-                .filter(line -> !line.isBlank())
-                .map(line -> Arrays.asList(line.split("\\t", -1)))
-                .toList();
+    const periodType = periodTypeText.toUpperCase();
+    const periodNumber = periodNumberText
+      ? Number(periodNumberText)
+      : null;
 
-        if (table.isEmpty()) {
-            return DrmParsedTable.builder()
-                    .headers(List.of())
-                    .rows(List.of())
-                    .build();
-        }
+    return {
+      field,
+      revisionType: REVISION_TYPE.BASE,
+      periodType,
+      year,
+      periodNumber,
+      businessCode,
+      periodHeaderName: createPeriodHeaderName(
+        periodType,
+        periodNumber,
+      ),
+    };
+  }
 
-        List<String> headers = table.get(0);
+  /*
+   * 비교기간 연간
+   *
+   * YYYY_sale
+   * YYYY_sale_profit
+   */
+  const comparisonYearlyMatch = field.match(
+    /^YYYY_(.+)$/i,
+  );
 
-        List<List<String>> rows = table.size() > 1
-                ? table.subList(1, table.size())
-                : List.of();
+  if (comparisonYearlyMatch) {
+    const [, businessCode] = comparisonYearlyMatch;
 
-        return DrmParsedTable.builder()
-                .headers(headers)
-                .rows(rows)
-                .build();
-    }
+    return {
+      field,
+      revisionType: REVISION_TYPE.COMPARISON,
+      periodType: "Y",
+
+      /*
+       * 비교기간 컬럼명에는 실제 연도가 없으므로
+       * 화면에서 사용할 연도값은 외부 기준으로 넣어야 한다.
+       */
+      year: "YYYY",
+      periodNumber: null,
+      businessCode,
+      periodHeaderName: null,
+    };
+  }
+
+  /*
+   * 비교기간 월/분기/반기
+   *
+   * MYYYY01_sale
+   * QYYYY01_sale
+   * HYYYY01_sale
+   * HYYYY03_sale
+   */
+  const comparisonPeriodMatch = field.match(
+    /^(H|Q|M)YYYY(\d{2})_(.+)$/i,
+  );
+
+  if (!comparisonPeriodMatch) {
+    return null;
+  }
+
+  const [
+    ,
+    periodTypeText,
+    periodNumberText,
+    businessCode,
+  ] = comparisonPeriodMatch;
+
+  const periodType = periodTypeText.toUpperCase();
+  const periodNumber = Number(periodNumberText);
+
+  return {
+    field,
+    revisionType: REVISION_TYPE.COMPARISON,
+    periodType,
+
+    /*
+     * YYYY는 컬럼명에 실제로 포함된 문자열이다.
+     */
+    year: "YYYY",
+    periodNumber,
+    businessCode,
+    periodHeaderName: createPeriodHeaderName(
+      periodType,
+      periodNumber,
+    ),
+  };
 }
-
-@Service
-@RequiredArgsConstructor
-public class SampleService {
-
-    private final DrmParsingService drmParsingService;
-    private final DrmParsedTableService drmParsedTableService;
-
-    public DrmParsedTable uploadExcel(
-            MultipartFile file,
-            ExcelUploadRequest request,
-            String authorization
-    ) {
-        String jwtToken = authorization.replaceFirst("^Bearer\\s+", "");
-        String empNo = "X0257623";
-
-        String parsedText = drmParsingService.parse(
-                file,
-                jwtToken,
-                empNo
-        );
-
-        return drmParsedTableService.parse(parsedText);
-    }
-}
-
-
-
-
-@PostMapping("/excel/upload")
-public DrmParsedTable uploadExcel(
-        @RequestPart("file") MultipartFile file,
-        @RequestPart("request") ExcelUploadRequest request,
-        @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
-) {
-    return sampleService.uploadExcel(file, request, authorization);
-}
-
-
-@PostMapping("/excel/upload")
-public DrmParsedTable uploadExcel(
-        @RequestPart("file") MultipartFile file,
-        @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
-) {
-    return sampleService.uploadExcel(file, authorization);
-}
-
-
-
-
-
-
