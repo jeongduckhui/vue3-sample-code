@@ -1,98 +1,55 @@
-[
-  {
-    "field": "categoryName",
-    "headerName": "구분",
-    "parentHeader": null,
-    "level": 0,
-    "headerPath": ["구분"],
-    "required": true,
-    "exampleValue": "구분1",
-    "dataType": "STRING",
-    "hidden": false,
-    "order": 1
-  },
-  {
-    "field": "appName",
-    "headerName": "APP",
-    "parentHeader": null,
-    "level": 0,
-    "headerPath": ["APP"],
-    "required": true,
-    "exampleValue": "APP-A",
-    "dataType": "STRING",
-    "hidden": false,
-    "order": 2
-  },
-  {
-    "field": "gaNgaType",
-    "headerName": "GA/NGA",
-    "parentHeader": null,
-    "level": 0,
-    "headerPath": ["GA/NGA"],
-    "required": true,
-    "exampleValue": "GA",
-    "dataType": "STRING",
-    "hidden": false,
-    "order": 3
-  },
-  {
-    "field": "customerName",
-    "headerName": "CUSTOMER",
-    "parentHeader": null,
-    "level": 0,
-    "headerPath": ["CUSTOMER"],
-    "required": true,
-    "exampleValue": "삼성전자",
-    "dataType": "STRING",
-    "hidden": false,
-    "order": 4
-  },
-  {
-    "field": "QTY_Q202601",
-    "headerName": "1M",
-    "parentHeader": "2026",
-    "level": 2,
-    "headerPath": ["QTY", "2026", "1M"],
-    "required": false,
-    "exampleValue": "100",
-    "dataType": "NUMBER",
-    "hidden": false,
-    "order": 5
-  },
-  {
-    "field": "QTY_Q202602",
-    "headerName": "2M",
-    "parentHeader": "2026",
-    "level": 2,
-    "headerPath": ["QTY", "2026", "2M"],
-    "required": false,
-    "exampleValue": "100",
-    "dataType": "NUMBER",
-    "hidden": false,
-    "order": 6
-  },
-  {
-    "field": "AMT_Q202601",
-    "headerName": "1M",
-    "parentHeader": "2026",
-    "level": 2,
-    "headerPath": ["AMT", "2026", "1M"],
-    "required": false,
-    "exampleValue": "1000",
-    "dataType": "NUMBER",
-    "hidden": false,
-    "order": 7
-  },
-  {
-    "field": "AMT_Q202602",
-    "headerName": "2M",
-    "parentHeader": "2026",
-    "level": 2,
-    "headerPath": ["AMT", "2026", "2M"],
-    "required": false,
-    "exampleValue": "1000",
-    "dataType": "NUMBER",
-    "hidden": false,
-    "order": 8
+function createFixedColumnDefs(rowData, headerName) {
+  const firstRow = rowData?.[0];
+
+  if (!firstRow) {
+    return [];
   }
-]
+
+  const existingFields = FIXED_FIELDS.filter((field) =>
+    Object.prototype.hasOwnProperty.call(firstRow, field)
+  );
+
+  return FIXED_COLUMN_DEFS.reduce((result, columnDef) => {
+    // 1. 그룹 컬럼
+    if (Array.isArray(columnDef.children)) {
+      const existingChildren = columnDef.children
+        .filter((child) => existingFields.includes(child.field))
+        .map((child) => ({
+          ...child,
+          colId: child.colId ?? child.field,
+          headerName: "",
+        }));
+
+      // 실제 데이터에 존재하는 자식 컬럼이 없으면 그룹도 제외
+      if (existingChildren.length === 0) {
+        return result;
+      }
+
+      result.push({
+        ...columnDef,
+
+        // App 또는 MODE를 그룹 헤더명으로 설정
+        headerName:
+          headerName === "APP" || headerName === "MODE"
+            ? headerName
+            : columnDef.headerName,
+
+        children: existingChildren,
+      });
+
+      return result;
+    }
+
+    // 2. 일반 컬럼
+    if (!existingFields.includes(columnDef.field)) {
+      return result;
+    }
+
+    result.push({
+      ...columnDef,
+      colId: columnDef.colId ?? columnDef.field,
+    });
+
+    return result;
+  }, []);
+}
