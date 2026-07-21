@@ -53,3 +53,53 @@ function createFixedColumnDefs(rowData, headerName) {
     return result;
   }, []);
 }
+
+
+
+
+
+
+
+const GridWrapper = styled.div`
+  .ag-header-cell.app-header-first {
+    overflow: visible !important;
+    z-index: 2;
+    border-right: none !important;
+  }
+
+  .ag-header-cell.app-header-first .ag-header-cell-comp-wrapper {
+    overflow: visible !important;
+    width: 200px !important;
+  }
+
+  .app-merged-header {
+    width: 200px;
+    height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: var(--ag-header-background-color);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .ag-header-cell.app-header-second {
+    border-left: none !important;
+  }
+
+  .ag-header-cell.app-header-second .ag-header-cell-comp-wrapper {
+    visibility: hidden;
+  }
+`;
+
+
+
+
+
+
+
+
+
+
