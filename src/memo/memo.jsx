@@ -1,30 +1,69 @@
 const gridWrapperRef = useRef(null);
-const [gridHeight, setGridHeight] = useState(300);
+const gridApiRef = useRef(null);
+
+const [gridHeight, setGridHeight] = useState(null);
 
 useLayoutEffect(() => {
+  const gridElement = gridWrapperRef.current;
+  if (!gridElement) return;
+
   const updateGridHeight = () => {
-    if (!gridWrapperRef.current) return;
+    const { top } = gridElement.getBoundingClientRect();
+    const nextHeight = Math.max(window.innerHeight - top - 20, 200);
 
-    const top = gridWrapperRef.current.getBoundingClientRect().top;
-    const calculatedHeight = window.innerHeight - top - 20;
-
-    setGridHeight(Math.max(calculatedHeight, 200));
+    setGridHeight(nextHeight);
   };
 
-  // 최초 렌더링 후 실제 DOM 위치가 잡힌 다음 계산
-  const frameId = requestAnimationFrame(() => {
+  // 최초 로딩 즉시 계산
+  updateGridHeight();
+
+  const parentElement = gridElement.parentElement;
+  const resizeObserver = new ResizeObserver(() => {
     updateGridHeight();
   });
+
+  if (parentElement) {
+    resizeObserver.observe(parentElement);
+  }
 
   window.addEventListener("resize", updateGridHeight);
 
   return () => {
-    cancelAnimationFrame(frameId);
+    resizeObserver.disconnect();
     window.removeEventListener("resize", updateGridHeight);
   };
+}, []);
+
+
+
+
+useLayoutEffect(() => {
+  const gridElement = gridWrapperRef.current;
+  if (!gridElement) return;
+
+  const frameId = requestAnimationFrame(() => {
+    const { top } = gridElement.getBoundingClientRect();
+    const nextHeight = Math.max(window.innerHeight - top - 20, 200);
+
+    setGridHeight(nextHeight);
+  });
+
+  return () => cancelAnimationFrame(frameId);
 }, [detailSearchOpen, gridOnlyOpen]);
 
 
+
+
+
+useEffect(() => {
+  if (gridHeight == null) return;
+
+  const frameId = requestAnimationFrame(() => {
+    gridApiRef.current?.doLayout();
+  });
+
+  return () => cancelAnimationFrame(frameId);
+}, [gridHeight]);
 
 
 
@@ -34,49 +73,19 @@ useLayoutEffect(() => {
   className="ag-theme-balham"
   style={{
     width: "100%",
-    height: `${gridHeight}px`,
-    minHeight: "200px",
+    height: gridHeight == null ? "200px" : `${gridHeight}px`,
   }}
 >
   <AgGridReact
     rowData={rowData}
     columnDefs={columnDefs}
     onGridReady={(params) => {
-      params.api.doLayout();
+      gridApiRef.current = params.api;
+
+      // API가 준비된 직후에도 현재 높이로 한 번 배치
+      requestAnimationFrame(() => {
+        params.api.doLayout();
+      });
     }}
   />
 </div>
-
-
-
-
-
-
-
-useLayoutEffect(() => {
-  const updateGridHeight = () => {
-    if (!gridWrapperRef.current) return;
-
-    const top = gridWrapperRef.current.getBoundingClientRect().top;
-    const calculatedHeight = window.innerHeight - top - 20;
-
-    setGridHeight(Math.max(calculatedHeight, 200));
-  };
-
-  const observer = new ResizeObserver(updateGridHeight);
-
-  // 그리드 자신보다 레이아웃이 변하는 부모를 감시
-  const parentElement = gridWrapperRef.current?.parentElement;
-
-  if (parentElement) {
-    observer.observe(parentElement);
-  }
-
-  updateGridHeight();
-  window.addEventListener("resize", updateGridHeight);
-
-  return () => {
-    observer.disconnect();
-    window.removeEventListener("resize", updateGridHeight);
-  };
-}, []);
