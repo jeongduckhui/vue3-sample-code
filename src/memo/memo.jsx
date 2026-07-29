@@ -1,21 +1,20 @@
-const gridRef = useRef(null);
-const [gridHeight, setGridHeight] = useState(0);
-
-const detailSearchOpen = ...;
-const gridOnlyOpen = ...;
+const gridWrapperRef = useRef(null);
+const [gridHeight, setGridHeight] = useState(300);
 
 useLayoutEffect(() => {
   const updateGridHeight = () => {
-    if (!gridRef.current) return;
+    if (!gridWrapperRef.current) return;
 
-    const { top } = gridRef.current.getBoundingClientRect();
-    const bottomMargin = 20;
+    const top = gridWrapperRef.current.getBoundingClientRect().top;
+    const calculatedHeight = window.innerHeight - top - 20;
 
-    setGridHeight(window.innerHeight - top - bottomMargin);
+    setGridHeight(Math.max(calculatedHeight, 200));
   };
 
-  // 상세검색 DOM이 실제로 열린 다음 측정
-  const frameId = requestAnimationFrame(updateGridHeight);
+  // 최초 렌더링 후 실제 DOM 위치가 잡힌 다음 계산
+  const frameId = requestAnimationFrame(() => {
+    updateGridHeight();
+  });
 
   window.addEventListener("resize", updateGridHeight);
 
@@ -24,3 +23,60 @@ useLayoutEffect(() => {
     window.removeEventListener("resize", updateGridHeight);
   };
 }, [detailSearchOpen, gridOnlyOpen]);
+
+
+
+
+
+
+<div
+  ref={gridWrapperRef}
+  className="ag-theme-balham"
+  style={{
+    width: "100%",
+    height: `${gridHeight}px`,
+    minHeight: "200px",
+  }}
+>
+  <AgGridReact
+    rowData={rowData}
+    columnDefs={columnDefs}
+    onGridReady={(params) => {
+      params.api.doLayout();
+    }}
+  />
+</div>
+
+
+
+
+
+
+
+useLayoutEffect(() => {
+  const updateGridHeight = () => {
+    if (!gridWrapperRef.current) return;
+
+    const top = gridWrapperRef.current.getBoundingClientRect().top;
+    const calculatedHeight = window.innerHeight - top - 20;
+
+    setGridHeight(Math.max(calculatedHeight, 200));
+  };
+
+  const observer = new ResizeObserver(updateGridHeight);
+
+  // 그리드 자신보다 레이아웃이 변하는 부모를 감시
+  const parentElement = gridWrapperRef.current?.parentElement;
+
+  if (parentElement) {
+    observer.observe(parentElement);
+  }
+
+  updateGridHeight();
+  window.addEventListener("resize", updateGridHeight);
+
+  return () => {
+    observer.disconnect();
+    window.removeEventListener("resize", updateGridHeight);
+  };
+}, []);
