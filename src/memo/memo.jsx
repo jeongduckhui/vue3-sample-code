@@ -1,37 +1,26 @@
-const normalizeGrandTotalRow = (rowData, orderedColumnDefs) => {
-  if (!rowData?.length || !orderedColumnDefs?.length) {
-    return rowData;
-  }
+const gridRef = useRef(null);
+const [gridHeight, setGridHeight] = useState(0);
 
-  const firstRow = rowData[0];
+const detailSearchOpen = ...;
+const gridOnlyOpen = ...;
 
-  // G-Total이 들어 있는 필드 찾기
-  const grandTotalField = Object.keys(firstRow).find(
-    (field) => firstRow[field] === "G-Total"
-  );
+useLayoutEffect(() => {
+  const updateGridHeight = () => {
+    if (!gridRef.current) return;
 
-  if (!grandTotalField) {
-    return rowData;
-  }
+    const { top } = gridRef.current.getBoundingClientRect();
+    const bottomMargin = 20;
 
-  // 현재 그리드에서 첫 번째로 보이는 컬럼
-  const firstColumnField = orderedColumnDefs.find(
-    (column) => column.field && !column.hide
-  )?.field;
-
-  if (!firstColumnField) {
-    return rowData;
-  }
-
-  const normalizedFirstRow = {
-    ...firstRow,
-
-    // 기존 G-Total 위치 제거
-    [grandTotalField]: "",
-
-    // 첫 번째 컬럼으로 이동
-    [firstColumnField]: "G-Total",
+    setGridHeight(window.innerHeight - top - bottomMargin);
   };
 
-  return [normalizedFirstRow, ...rowData.slice(1)];
-};
+  // 상세검색 DOM이 실제로 열린 다음 측정
+  const frameId = requestAnimationFrame(updateGridHeight);
+
+  window.addEventListener("resize", updateGridHeight);
+
+  return () => {
+    cancelAnimationFrame(frameId);
+    window.removeEventListener("resize", updateGridHeight);
+  };
+}, [detailSearchOpen, gridOnlyOpen]);
