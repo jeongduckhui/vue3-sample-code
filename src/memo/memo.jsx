@@ -1,32 +1,24 @@
-function addLeftBorderToFirstPath(column) {
-  // 부모 그룹 컬럼
-  if (column.children?.length) {
-    const [firstChild, ...otherChildren] = column.children;
+const GridWrapper = styled.div`
+  .ag-header-cell[col-id="NET_DIE"]::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 1px;
+    height: 100%;
 
-    return {
-      ...column,
-      headerGroupClass: [
-        column.headerGroupClass,
-        "dynamic-first-left-border",
-      ]
-        .filter(Boolean)
-        .join(" "),
+    border-right: none !important;
 
-      children: [
-        addLeftBorderToFirstPath(firstChild),
-        ...otherChildren,
-      ],
-    };
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 7.75px,
+      var(--ag-border-color) 7.75px,
+      var(--ag-border-color) 23.25px,
+      transparent 23.25px,
+      transparent 31px
+    );
+
+    pointer-events: none;
   }
-
-  // 마지막 leaf 컬럼
-  return {
-    ...column,
-    headerClass: [
-      column.headerClass,
-      "dynamic-first-left-border",
-    ]
-      .filter(Boolean)
-      .join(" "),
-  };
-}
+`;
