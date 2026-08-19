@@ -34,4 +34,37 @@ const results = headers.map(header => {
   };
 }).filter(Boolean);
 
-console.table(results);
+console.table(results)
+
+
+
+
+
+
+const pinnedHeader = document.querySelector('.ag-pinned-left-header');
+const pinnedBody = document.querySelector(
+  '.ag-pinned-left-cols-container'
+);
+
+const headerViewport = document.querySelector('.ag-header-viewport');
+const bodyViewport = document.querySelector(
+  '.ag-center-cols-viewport'
+);
+
+console.table({
+  pinnedHeaderWidth:
+    pinnedHeader?.getBoundingClientRect().width,
+
+  pinnedBodyWidth:
+    pinnedBody?.getBoundingClientRect().width,
+
+  headerViewportLeft:
+    headerViewport?.getBoundingClientRect().left,
+
+  bodyViewportLeft:
+    bodyViewport?.getBoundingClientRect().left,
+
+  viewportLeftDiff:
+    (bodyViewport?.getBoundingClientRect().left ?? 0) -
+    (headerViewport?.getBoundingClientRect().left ?? 0),
+});
