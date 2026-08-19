@@ -68,3 +68,58 @@ console.table({
     (bodyViewport?.getBoundingClientRect().left ?? 0) -
     (headerViewport?.getBoundingClientRect().left ?? 0),
 });
+
+
+
+
+
+
+
+const grid = document.querySelector('#target-grid');
+
+const pinnedHeader = grid.querySelector(
+  '.ag-pinned-left-header'
+);
+
+const pinnedBody = grid.querySelector(
+  '.ag-pinned-left-cols-container'
+);
+
+const headerViewport = grid.querySelector(
+  '.ag-header-viewport'
+);
+
+const bodyViewport = grid.querySelector(
+  '.ag-center-cols-viewport'
+);
+
+console.table({
+  pinnedHeaderWidth:
+    pinnedHeader.getBoundingClientRect().width,
+
+  pinnedBodyWidth:
+    pinnedBody.getBoundingClientRect().width,
+
+  pinnedWidthDiff:
+    pinnedBody.getBoundingClientRect().width -
+    pinnedHeader.getBoundingClientRect().width,
+
+  headerViewportLeft:
+    headerViewport.getBoundingClientRect().left,
+
+  bodyViewportLeft:
+    bodyViewport.getBoundingClientRect().left,
+
+  viewportLeftDiff:
+    bodyViewport.getBoundingClientRect().left -
+    headerViewport.getBoundingClientRect().left,
+
+  pinnedHeaderInlineWidth: pinnedHeader.style.width,
+  pinnedBodyInlineWidth: pinnedBody.style.width,
+
+  pinnedHeaderComputedWidth:
+    getComputedStyle(pinnedHeader).width,
+
+  pinnedBodyComputedWidth:
+    getComputedStyle(pinnedBody).width,
+});
