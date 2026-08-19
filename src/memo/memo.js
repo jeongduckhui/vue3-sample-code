@@ -123,3 +123,111 @@ console.table({
   pinnedBodyComputedWidth:
     getComputedStyle(pinnedBody).width,
 });
+
+
+
+
+
+
+
+
+const grid = document.querySelector('#target-grid');
+
+function inspectPath(selector) {
+  let element = grid.querySelector(selector);
+  const result = [];
+
+  while (element && element !== grid.parentElement) {
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+
+    result.push({
+      element:
+        element.className ||
+        element.tagName,
+
+      rectLeft: rect.left,
+      rectWidth: rect.width,
+
+      inlineLeft: element.style.left,
+      inlineWidth: element.style.width,
+      inlineTransform: element.style.transform,
+
+      computedLeft: style.left,
+      marginLeft: style.marginLeft,
+      paddingLeft: style.paddingLeft,
+      transform: style.transform,
+      translate: style.translate,
+      position: style.position,
+      display: style.display,
+      zoom: style.zoom,
+    });
+
+    element = element.parentElement;
+  }
+
+  console.table(result);
+}
+
+inspectPath('.ag-header-viewport');
+inspectPath('.ag-center-cols-viewport');
+
+
+
+
+
+
+
+
+const bodyViewport = grid.querySelector(
+  '.ag-center-cols-viewport'
+);
+
+console.log({
+  inlineTransform: bodyViewport.style.transform,
+  computedTransform:
+    getComputedStyle(bodyViewport).transform,
+
+  inlineLeft: bodyViewport.style.left,
+  computedLeft:
+    getComputedStyle(bodyViewport).left,
+
+  inlineMarginLeft: bodyViewport.style.marginLeft,
+  computedMarginLeft:
+    getComputedStyle(bodyViewport).marginLeft,
+});
+
+
+
+
+
+
+
+
+
+const root = grid.querySelector('.ag-root');
+
+console.log({
+  pinnedLeftWidth:
+    getComputedStyle(root)
+      .getPropertyValue('--ag-pinned-left-width'),
+
+  bodyPinnedLeftWidth:
+    getComputedStyle(
+      grid.querySelector('.ag-body-viewport')
+    ).getPropertyValue('--ag-pinned-left-width'),
+
+  centerPinnedLeftWidth:
+    getComputedStyle(
+      grid.querySelector('.ag-center-cols-viewport')
+    ).getPropertyValue('--ag-pinned-left-width'),
+});
+
+
+
+
+
+
+
+
+
