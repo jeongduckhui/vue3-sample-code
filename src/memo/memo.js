@@ -231,3 +231,38 @@ console.log({
 
 
 
+const grid = document.querySelector('#target-grid');
+
+const header = grid.querySelector('.ag-header-viewport');
+const body = grid.querySelector('.ag-center-cols-viewport');
+const root = grid.querySelector('.ag-root');
+
+function inspect(element) {
+  const style = getComputedStyle(element);
+  const rect = element.getBoundingClientRect();
+
+  return {
+    rectLeft: rect.left,
+    rectWidth: rect.width,
+
+    inlineWidth: element.style.width,
+    inlineLeft: element.style.left,
+    inlineMarginLeft: element.style.marginLeft,
+    inlineTransform: element.style.transform,
+
+    computedWidth: style.width,
+    computedLeft: style.left,
+    computedMarginLeft: style.marginLeft,
+    computedTransform: style.transform,
+
+    flexBasis: style.flexBasis,
+    flexShrink: style.flexShrink,
+    maxWidth: style.maxWidth,
+  };
+}
+
+console.log({
+  root: inspect(root),
+  header: inspect(header),
+  body: inspect(body),
+});
