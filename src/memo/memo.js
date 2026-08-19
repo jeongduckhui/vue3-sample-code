@@ -266,3 +266,43 @@ console.log({
   header: inspect(header),
   body: inspect(body),
 });
+
+
+
+
+
+
+
+
+const grid = document.querySelector('#target-grid');
+
+const pinnedViewport = grid.querySelector(
+  '.ag-pinned-left-cols-viewport'
+);
+
+const pinnedContainer = grid.querySelector(
+  '.ag-pinned-left-cols-container'
+);
+
+function inspect(element) {
+  const style = getComputedStyle(element);
+  const rect = element.getBoundingClientRect();
+
+  return {
+    rectLeft: rect.left,
+    rectWidth: rect.width,
+    inlineWidth: element.style.width,
+    computedWidth: style.width,
+    flexGrow: style.flexGrow,
+    flexShrink: style.flexShrink,
+    flexBasis: style.flexBasis,
+    minWidth: style.minWidth,
+    maxWidth: style.maxWidth,
+    overflow: style.overflow,
+  };
+}
+
+console.log({
+  pinnedViewport: inspect(pinnedViewport),
+  pinnedContainer: inspect(pinnedContainer),
+});
