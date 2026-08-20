@@ -250,4 +250,86 @@ useEffect(() => {
 
 
 
+const getStickyValue = (api, startRowIndex, field) => {
+  for (
+    let rowIndex = startRowIndex;
+    rowIndex >= 0;
+    rowIndex--
+  ) {
+    const rowNode =
+      api.getDisplayedRowAtIndex(rowIndex);
+
+    const value = rowNode?.data?.[field];
+
+    if (
+      value !== null &&
+      value !== undefined &&
+      value !== ""
+    ) {
+      return value;
+    }
+  }
+
+  return "";
+};
+
+
+
+
+
+
+
+
+
+
+
+const handleBodyScroll = (event) => {
+  if (event.direction !== "vertical") {
+    return;
+  }
+
+  const api = event.api;
+  const firstRowIndex =
+    api.getFirstDisplayedRowIndex();
+
+  if (firstRowIndex <= 0) {
+    lastStickyKey = null;
+
+    api.setGridOption(
+      "pinnedTopRowData",
+      []
+    );
+
+    return;
+  }
+
+  const stickyRow = {};
+
+  fixedFields.forEach((field) => {
+    stickyRow[field] = getStickyValue(
+      api,
+      firstRowIndex,
+      field
+    );
+  });
+
+  const stickyKey = fixedFields
+    .map((field) => stickyRow[field])
+    .join("|");
+
+  if (stickyKey === lastStickyKey) {
+    return;
+  }
+
+  lastStickyKey = stickyKey;
+
+  api.setGridOption(
+    "pinnedTopRowData",
+    [stickyRow]
+  );
+};
+
+
+
+
 
