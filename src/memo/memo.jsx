@@ -127,3 +127,127 @@ const defaultColDef = {
   background: transparent;
   border-right: none;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+const fixedFields = [
+  "tech",
+  "fab",
+  "product",
+];
+
+let lastStickyKey = null;
+
+const handleBodyScroll = (event) => {
+  if (event.direction !== "vertical") {
+    return;
+  }
+
+  const api = event.api;
+  const firstRowIndex = api.getFirstDisplayedRowIndex();
+
+  console.log("현재 첫 번째 표시 행:", firstRowIndex);
+
+  if (firstRowIndex <= 0) {
+    lastStickyKey = null;
+    api.setGridOption("pinnedTopRowData", []);
+    return;
+  }
+
+  const firstRowNode =
+    api.getDisplayedRowAtIndex(firstRowIndex);
+
+  if (!firstRowNode?.data) {
+    return;
+  }
+
+  const currentRow = firstRowNode.data;
+
+  const stickyKey = fixedFields
+    .map((field) => currentRow[field])
+    .join("|");
+
+  if (stickyKey === lastStickyKey) {
+    return;
+  }
+
+  lastStickyKey = stickyKey;
+
+  const stickyRow = {};
+
+  fixedFields.forEach((field) => {
+    stickyRow[field] = currentRow[field];
+  });
+
+  api.setGridOption("pinnedTopRowData", [stickyRow]);
+};
+
+
+
+
+
+
+
+const onGridReady = (params) => {
+  params.api.addEventListener(
+    "bodyScroll",
+    handleBodyScroll
+  );
+
+  // 기존 onGridReady 로직
+  requestAnimationFrame(() => {
+    params.api.doLayout();
+  });
+};
+
+
+
+
+
+const onGridPreDestroyed = (params) => {
+  params.api.removeEventListener(
+    "bodyScroll",
+    handleBodyScroll
+  );
+};
+
+
+
+
+
+
+
+const gridApiRef = useRef(null);
+
+const onGridReady = (params) => {
+  gridApiRef.current = params.api;
+
+  params.api.addEventListener(
+    "bodyScroll",
+    handleBodyScroll
+  );
+};
+
+useEffect(() => {
+  return () => {
+    gridApiRef.current?.removeEventListener(
+      "bodyScroll",
+      handleBodyScroll
+    );
+  };
+}, []);
+
+
+
+
+
+
