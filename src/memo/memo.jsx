@@ -1,37 +1,129 @@
-// 조회 조건 등에 따라 2~10개로 달라지는 정적 컬럼
-const staticColumnDefs: ColDef[] = createStaticColumnDefs(searchCondition);
+const fixedFields = [
+  "tech",
+  "fab",
+  "product"
+];
 
-// 정적 컬럼 ID 동적 생성
-const staticColumnIds = new Set(
-  staticColumnDefs.map(col => col.colId ?? String(col.field))
-);
+let lastStickyKey = null;
 
-const isTotalRow = (data: any) =>
-  data?.rowType === 'G_TOTAL';
-// 또는 data?.[첫번째정적컬럼필드] === 'G-totaln'
-
-const getStaticColumnSpan = (params: ColSpanParams): number => {
-  if (!isTotalRow(params.data)) {
-    return 1;
+const onBodyScroll = (params) => {
+  if (params.direction !== "vertical") {
+    return;
   }
 
-  const displayedColumns = params.api.getAllDisplayedColumns();
-  const currentIndex = displayedColumns.findIndex(
-    column => column === params.column
-  );
+  const api = params.api;
+  const firstRowIndex = api.getFirstDisplayedRowIndex();
+  const firstRowNode = api.getDisplayedRowAtIndex(firstRowIndex);
 
-  let spanCount = 0;
+  if (!firstRowNode?.data) {
+    return;
+  }
 
-  for (let i = currentIndex; i < displayedColumns.length; i++) {
-    const columnId = displayedColumns[i].getColId();
+  const currentRow = firstRowNode.data;
 
-    // 동적 컬럼을 만나는 순간 종료
-    if (!staticColumnIds.has(columnId)) {
-      break;
+  const stickyKey = fixedFields
+    .map((field) => currentRow[field])
+    .join("|");
+
+  // 같은 병합 그룹 안에서 스크롤하는 동안에는 갱신하지 않음
+  if (stickyKey === lastStickyKey) {
+    return;
+  }
+
+  lastStickyKey = stickyKey;
+
+  const stickyRow = {};
+
+  fixedFields.forEach((field) => {
+    stickyRow[field] = currentRow[field];
+  });
+
+  // 동적 컬럼 값은 빈 값으로 표시
+  api.getColumns().forEach((column) => {
+    const field = column.getColDef().field;
+
+    if (field && !fixedFields.includes(field)) {
+      stickyRow[field] = null;
     }
+  });
 
-    spanCount++;
+  api.setGridOption("pinnedTopRowData", [stickyRow]);
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+const onBodyScroll = (params) => {
+  if (params.direction !== "vertical") {
+    return;
   }
 
-  return Math.max(spanCount, 1);
+  const api = params.api;
+  const firstRowIndex = api.getFirstDisplayedRowIndex();
+
+  if (firstRowIndex <= 0) {
+    lastStickyKey = null;
+    api.setGridOption("pinnedTopRowData", []);
+    return;
+  }
+
+  const firstRowNode = api.getDisplayedRowAtIndex(firstRowIndex);
+
+  if (!firstRowNode?.data) {
+    return;
+  }
+
+  const currentRow = firstRowNode.data;
+
+  const stickyKey = fixedFields
+    .map((field) => currentRow[field])
+    .join("|");
+
+  if (stickyKey === lastStickyKey) {
+    return;
+  }
+
+  lastStickyKey = stickyKey;
+
+  const stickyRow = {};
+
+  fixedFields.forEach((field) => {
+    stickyRow[field] = currentRow[field];
+  });
+
+  api.setGridOption("pinnedTopRowData", [stickyRow]);
 };
+
+
+
+
+
+const defaultColDef = {
+  cellClassRules: {
+    "sticky-empty-cell": (params) => {
+      return (
+        params.node.rowPinned === "top" &&
+        !fixedFields.includes(params.colDef.field)
+      );
+    },
+  },
+};
+
+
+
+
+
+
+.ag-row-pinned .sticky-empty-cell {
+  background: transparent;
+  border-right: none;
+}
