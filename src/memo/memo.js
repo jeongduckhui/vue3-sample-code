@@ -29,3 +29,25 @@
     flexShrink: style.flexShrink,
   });
 });
+
+
+
+
+
+
+
+
+const pinned = document.querySelector(
+  "#실제그리드ID .ag-pinned-left-cols-viewport"
+);
+
+const center = document.querySelector(
+  "#실제그리드ID .ag-center-cols-viewport"
+);
+
+console.log({
+  pinnedLeft: pinned.getBoundingClientRect().left,
+  pinnedWidth: pinned.getBoundingClientRect().width,
+  centerLeft: center.getBoundingClientRect().left,
+  centerWidth: center.getBoundingClientRect().width,
+});
