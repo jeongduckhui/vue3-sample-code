@@ -133,3 +133,56 @@ console.log({
   flexShrink: getComputedStyle(pinned).flexShrink,
   flexBasis: getComputedStyle(pinned).flexBasis,
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+const getRect = (selector) => {
+  const element = document.querySelector(
+    `#실제그리드ID ${selector}`
+  );
+
+  if (!element) {
+    return null;
+  }
+
+  const rect = element.getBoundingClientRect();
+  const style = getComputedStyle(element);
+
+  return {
+    left: rect.left,
+    width: rect.width,
+    inlineStyle: element.getAttribute("style"),
+    computedWidth: style.width,
+    minWidth: style.minWidth,
+    maxWidth: style.maxWidth,
+    position: style.position,
+    transform: style.transform,
+  };
+};
+
+console.log({
+  pinnedHeader:
+    getRect(".ag-pinned-left-header"),
+
+  pinnedViewport:
+    getRect(".ag-pinned-left-cols-viewport"),
+
+  pinnedContainer:
+    getRect(".ag-pinned-left-cols-container"),
+
+  centerViewport:
+    getRect(".ag-center-cols-viewport"),
+
+  centerContainer:
+    getRect(".ag-center-cols-container"),
+});
