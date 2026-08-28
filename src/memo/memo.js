@@ -112,3 +112,24 @@ console.log(
   "같은 부모인가?",
   pinned?.parentElement === center?.parentElement
 );
+
+
+
+
+
+
+
+
+
+
+
+const pinned = document.querySelector(
+  "#실제그리드ID .ag-pinned-left-cols-viewport"
+);
+
+console.log({
+  flex: getComputedStyle(pinned).flex,
+  flexGrow: getComputedStyle(pinned).flexGrow,
+  flexShrink: getComputedStyle(pinned).flexShrink,
+  flexBasis: getComputedStyle(pinned).flexBasis,
+});
