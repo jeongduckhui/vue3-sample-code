@@ -186,3 +186,49 @@ console.log({
   centerContainer:
     getRect(".ag-center-cols-container"),
 });
+
+
+
+
+
+
+
+
+
+
+const info = (selector) => {
+  const element = document.querySelector(
+    `#실제그리드ID ${selector}`
+  );
+
+  if (!element) {
+    return {
+      selector,
+      exists: false,
+    };
+  }
+
+  const rect = element.getBoundingClientRect();
+  const style = getComputedStyle(element);
+
+  return {
+    selector,
+    left: rect.left,
+    width: rect.width,
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+    display: style.display,
+    visibility: style.visibility,
+    overflowX: style.overflowX,
+  };
+};
+
+console.log([
+  info(".ag-pinned-left-cols-viewport"),
+  info(".ag-center-cols-viewport"),
+  info(".ag-center-cols-container"),
+  info(".ag-body-horizontal-scroll"),
+  info(".ag-body-horizontal-scroll-viewport"),
+  info(".ag-body-horizontal-scroll-container"),
+  info(".ag-horizontal-left-spacer"),
+]);
