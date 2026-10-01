@@ -160,7 +160,173 @@ const createStickyRowData = (api, rowNode) => {
 };
 
 
+=============================
+
+  
+const createStickyRowData = (api, rowNode) => {
+  if (!rowNode?.data) {
+    return [];
+  }
+
+  return [
+    {
+      ...rowNode.data,
+
+      // Sticky 행 여부
+      __isSticky: true,
+
+      // 실제 화면에 표시되던 원본 행 위치
+      __sourceRowIndex: rowNode.rowIndex,
+    },
+  ];
+};
 
 
 
+
+
+
+const handleBodyScroll = (event) => {
+  const { api } = event;
+
+  const firstRowIndex = api.getFirstDisplayedRowIndex();
+  const rowNode = api.getDisplayedRowAtIndex(firstRowIndex);
+
+  api.setGridOption(
+    "pinnedTopRowData",
+    createStickyRowData(api, rowNode)
+  );
+};
+
+
+
+
+const getSourceCellParams = (params) => {
+  if (!params.data?.__isSticky) {
+    return params;
+  }
+
+  const sourceRowIndex = params.data.__sourceRowIndex;
+  const sourceNode =
+    params.api.getDisplayedRowAtIndex(sourceRowIndex);
+
+  return {
+    ...params,
+    node: sourceNode,
+    data: sourceNode?.data,
+    value: sourceNode?.data?.[params.colDef.field],
+  };
+};
+
+
+
+
+
+
+const cellRenderer = (params) => {
+  if (같은값이라서빈칸처리조건(params)) {
+    return "";
+  }
+
+  if (subtotal조건(params)) {
+    return "Subtotal";
+  }
+
+  return params.value;
+};
+
+
+
+
+
+const cellRenderer = (params) => {
+  const sourceParams = getSourceCellParams(params);
+
+  if (같은값이라서빈칸처리조건(sourceParams)) {
+    return "";
+  }
+
+  if (subtotal조건(sourceParams)) {
+    return "Subtotal";
+  }
+
+  return sourceParams.value ?? "";
+};
+
+
+
+
+
+const cellClassRules = {
+  "merged-cell": (params) => {
+    const sourceParams = getSourceCellParams(params);
+
+    return 같은값이라서병합처리조건(sourceParams);
+  },
+
+  "subtotal-cell": (params) => {
+    const sourceParams = getSourceCellParams(params);
+
+    return subtotal조건(sourceParams);
+  },
+};
+
+
+
+
+const cellClassRules = {
+  "merged-cell": (params) => {
+    const sourceParams = getSourceCellParams(params);
+
+    return 같은값이라서병합처리조건(sourceParams);
+  },
+
+  "subtotal-cell": (params) => {
+    const sourceParams = getSourceCellParams(params);
+
+    return subtotal조건(sourceParams);
+  },
+};
+
+
+
+
+
+const shouldHideCellValue = (params) => {
+  // 기존 동일 값 빈칸 처리 로직
+};
+
+const isSubtotalCell = (params) => {
+  // 기존 Subtotal 판단 로직
+};
+
+
+
+
+
+const cellRenderer = (params) => {
+  const sourceParams = getSourceCellParams(params);
+
+  if (shouldHideCellValue(sourceParams)) {
+    return "";
+  }
+
+  if (isSubtotalCell(sourceParams)) {
+    return "Subtotal";
+  }
+
+  return sourceParams.value ?? "";
+};
+
+
+
+
+
+const cellClassRules = {
+  "merged-cell": (params) =>
+    shouldHideCellValue(getSourceCellParams(params)),
+
+  "subtotal-cell": (params) =>
+    isSubtotalCell(getSourceCellParams(params)),
+};
 
