@@ -330,3 +330,114 @@ const cellClassRules = {
     isSubtotalCell(getSourceCellParams(params)),
 };
 
+
+
+
+=============================
+
+  const handleBodyScroll = (event) => {
+  if (event.direction !== "vertical") {
+    return;
+  }
+
+  const { api, top } = event;
+
+  const firstVisibleRowIndex =
+    api.getRowIndexAtPixel(top + 1);
+
+  if (firstVisibleRowIndex == null) {
+    api.setGridOption("pinnedTopRowData", []);
+    return;
+  }
+
+  const rowNode =
+    api.getDisplayedRowAtIndex(firstVisibleRowIndex);
+
+  const stickyRowData =
+    createStickyRowData(api, rowNode);
+
+  api.setGridOption(
+    "pinnedTopRowData",
+    stickyRowData
+  );
+};
+  
+const scrollFrameRef = useRef(null);
+
+const handleBodyScroll = useCallback((event) => {
+  if (event.direction !== "vertical") {
+    return;
+  }
+
+  const { api, top } = event;
+
+  if (scrollFrameRef.current) {
+    cancelAnimationFrame(scrollFrameRef.current);
+  }
+
+  scrollFrameRef.current = requestAnimationFrame(() => {
+    const firstVisibleRowIndex =
+      api.getRowIndexAtPixel(top + 1);
+
+    if (firstVisibleRowIndex == null) {
+      api.setGridOption("pinnedTopRowData", []);
+      return;
+    }
+
+    const rowNode =
+      api.getDisplayedRowAtIndex(firstVisibleRowIndex);
+
+    api.setGridOption(
+      "pinnedTopRowData",
+      createStickyRowData(api, rowNode)
+    );
+  });
+}, []);
+
+
+
+const stickyRowIndexRef = useRef(null);
+const scrollFrameRef = useRef(null);
+
+const handleBodyScroll = useCallback((event) => {
+  if (event.direction !== "vertical") {
+    return;
+  }
+
+  const { api, top } = event;
+
+  if (scrollFrameRef.current) {
+    cancelAnimationFrame(scrollFrameRef.current);
+  }
+
+  scrollFrameRef.current = requestAnimationFrame(() => {
+    const visibleRowIndex =
+      api.getRowIndexAtPixel(top + 1);
+
+    if (visibleRowIndex == null) {
+      stickyRowIndexRef.current = null;
+      api.setGridOption("pinnedTopRowData", []);
+      return;
+    }
+
+    if (
+      stickyRowIndexRef.current === visibleRowIndex
+    ) {
+      return;
+    }
+
+    const rowNode =
+      api.getDisplayedRowAtIndex(visibleRowIndex);
+
+    if (!rowNode) {
+      return;
+    }
+
+    stickyRowIndexRef.current = visibleRowIndex;
+
+    api.setGridOption(
+      "pinnedTopRowData",
+      createStickyRowData(api, rowNode)
+    );
+  });
+}, []);
