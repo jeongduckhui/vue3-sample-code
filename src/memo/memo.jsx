@@ -441,3 +441,147 @@ const handleBodyScroll = useCallback((event) => {
     );
   });
 }, []);
+
+
+===========
+
+const getVisibleRowIndex = (api, scrollTop) => {
+  const rowCount = api.getDisplayedRowCount();
+
+  for (let index = 0; index < rowCount; index += 1) {
+    const rowNode =
+      api.getDisplayedRowAtIndex(index);
+
+    if (!rowNode) {
+      continue;
+    }
+
+    const rowTop = rowNode.rowTop ?? 0;
+    const rowHeight = rowNode.rowHeight ?? 0;
+    const rowBottom = rowTop + rowHeight;
+
+    if (rowBottom > scrollTop) {
+      return index;
+    }
+  }
+
+  return null;
+};
+
+
+
+
+const handleBodyScroll = (event) => {
+  if (event.direction !== "vertical") {
+    return;
+  }
+
+  const { api, top } = event;
+
+  const visibleRowIndex =
+    getVisibleRowIndex(api, top + 1);
+
+  if (visibleRowIndex == null) {
+    api.setGridOption("pinnedTopRowData", []);
+    return;
+  }
+
+  const rowNode =
+    api.getDisplayedRowAtIndex(visibleRowIndex);
+
+  if (!rowNode) {
+    return;
+  }
+
+  api.setGridOption(
+    "pinnedTopRowData",
+    createStickyRowData(api, rowNode)
+  );
+};
+
+
+
+
+
+const getVisibleRowIndex = (api, scrollTop) => {
+  let left = 0;
+  let right = api.getDisplayedRowCount() - 1;
+
+  while (left <= right) {
+    const middle = Math.floor((left + right) / 2);
+    const rowNode =
+      api.getDisplayedRowAtIndex(middle);
+
+    if (!rowNode) {
+      return null;
+    }
+
+    const rowTop = rowNode.rowTop ?? 0;
+    const rowHeight = rowNode.rowHeight ?? 0;
+    const rowBottom = rowTop + rowHeight;
+
+    if (scrollTop < rowTop) {
+      right = middle - 1;
+    } else if (scrollTop >= rowBottom) {
+      left = middle + 1;
+    } else {
+      return middle;
+    }
+  }
+
+  return left < api.getDisplayedRowCount()
+    ? left
+    : null;
+};
+
+
+
+
+
+
+const scrollFrameRef = useRef(null);
+const stickyRowIndexRef = useRef(null);
+
+const handleBodyScroll = useCallback((event) => {
+  if (event.direction !== "vertical") {
+    return;
+  }
+
+  const { api, top } = event;
+
+  if (scrollFrameRef.current) {
+    cancelAnimationFrame(scrollFrameRef.current);
+  }
+
+  scrollFrameRef.current = requestAnimationFrame(() => {
+    const visibleRowIndex =
+      getVisibleRowIndex(api, top + 1);
+
+    if (visibleRowIndex == null) {
+      stickyRowIndexRef.current = null;
+      api.setGridOption("pinnedTopRowData", []);
+      return;
+    }
+
+    if (
+      stickyRowIndexRef.current === visibleRowIndex
+    ) {
+      return;
+    }
+
+    const rowNode =
+      api.getDisplayedRowAtIndex(visibleRowIndex);
+
+    if (!rowNode) {
+      return;
+    }
+
+    stickyRowIndexRef.current = visibleRowIndex;
+
+    api.setGridOption(
+      "pinnedTopRowData",
+      createStickyRowData(api, rowNode)
+    );
+  });
+}, []);
+  
