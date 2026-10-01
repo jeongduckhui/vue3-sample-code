@@ -584,4 +584,88 @@ const handleBodyScroll = useCallback((event) => {
     );
   });
 }, []);
+
+
+
+
+
+
+===================
   
+  const handleBodyScroll = useCallback((event) => {
+  if (event.direction !== "vertical") {
+    return;
+  }
+
+  const { api, top } = event;
+
+  if (scrollFrameRef.current) {
+    cancelAnimationFrame(scrollFrameRef.current);
+  }
+
+  scrollFrameRef.current = requestAnimationFrame(() => {
+    scrollFrameRef.current = null;
+
+    const rowCount = api.getDisplayedRowCount();
+
+    if (rowCount === 0) {
+      clearStickyRow(api);
+      return;
+    }
+
+    const firstRowNode =
+      api.getDisplayedRowAtIndex(0);
+
+    const firstRowBottom =
+      (firstRowNode?.rowTop ?? 0) +
+      (firstRowNode?.rowHeight ?? 0);
+
+    if (top < firstRowBottom) {
+      clearStickyRow(api);
+      return;
+    }
+
+    const visibleRowIndex =
+      getVisibleRowIndex(api, top + 1);
+
+    if (visibleRowIndex == null) {
+      clearStickyRow(api);
+      return;
+    }
+
+    const targetRowIndex = Math.max(
+      0,
+      Math.min(
+        visibleRowIndex - 1,
+        rowCount - 1
+      )
+    );
+
+    if (targetRowIndex === 0) {
+      clearStickyRow(api);
+      return;
+    }
+
+    if (
+      stickyRowIndexRef.current === targetRowIndex
+    ) {
+      return;
+    }
+
+    const rowNode =
+      api.getDisplayedRowAtIndex(targetRowIndex);
+
+    if (!rowNode) {
+      clearStickyRow(api);
+      return;
+    }
+
+    stickyRowIndexRef.current =
+      targetRowIndex;
+
+    api.setGridOption(
+      "pinnedTopRowData",
+      createStickyRowData(api, rowNode)
+    );
+  });
+}, []);
