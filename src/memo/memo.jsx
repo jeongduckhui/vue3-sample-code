@@ -669,3 +669,71 @@ const handleBodyScroll = useCallback((event) => {
     );
   });
 }, []);
+
+
+
+
+
+
+import {
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
+
+const useGridStickyRow = ({
+  gridApi,
+}) => {
+  const scrollFrameRef = useRef(null);
+  const stickyRowIndexRef = useRef(null);
+
+  const clearStickyRow = useCallback((api) => {
+    stickyRowIndexRef.current = null;
+
+    api.setGridOption(
+      "pinnedTopRowData",
+      []
+    );
+  }, []);
+
+  const handleBodyScroll = useCallback(
+    (event) => {
+      // Sticky 처리
+    },
+    [clearStickyRow]
+  );
+
+  useEffect(() => {
+    if (!gridApi) {
+      return;
+    }
+
+    gridApi.addEventListener(
+      "bodyScroll",
+      handleBodyScroll
+    );
+
+    return () => {
+      gridApi.removeEventListener(
+        "bodyScroll",
+        handleBodyScroll
+      );
+
+      if (scrollFrameRef.current) {
+        cancelAnimationFrame(
+          scrollFrameRef.current
+        );
+
+        scrollFrameRef.current = null;
+      }
+
+      clearStickyRow(gridApi);
+    };
+  }, [
+    gridApi,
+    handleBodyScroll,
+    clearStickyRow,
+  ]);
+};
+
+export default useGridStickyRow;
