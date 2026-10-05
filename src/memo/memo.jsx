@@ -737,3 +737,26 @@ const useGridStickyRow = ({
 };
 
 export default useGridStickyRow;
+
+
+
+
+
+
+
+const GridWrapper = styled.div`
+  .ag-floating-top,
+  .ag-pinned-left-floating-top,
+  .ag-pinned-right-floating-top {
+    border-bottom: none !important;
+  }
+
+  .ag-floating-top .ag-row-pinned,
+  .ag-floating-top .ag-row-pinned .ag-cell,
+  .ag-pinned-left-floating-top .ag-row-pinned,
+  .ag-pinned-left-floating-top .ag-row-pinned .ag-cell,
+  .ag-pinned-right-floating-top .ag-row-pinned,
+  .ag-pinned-right-floating-top .ag-row-pinned .ag-cell {
+    border-bottom: none !important;
+  }
+`;
