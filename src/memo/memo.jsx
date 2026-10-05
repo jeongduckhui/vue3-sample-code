@@ -760,3 +760,23 @@ const GridWrapper = styled.div`
     border-bottom: none !important;
   }
 `;
+
+
+
+
+
+const GridWrapper = styled.div`
+  /* 정적 pinned 컬럼 영역 */
+  .ag-pinned-left-floating-top,
+  .ag-pinned-left-floating-top .ag-row-pinned,
+  .ag-pinned-left-floating-top .ag-row-pinned .ag-cell {
+    border-bottom: none !important;
+  }
+
+  /* 동적 중앙 컬럼 영역 */
+  .ag-floating-top-container,
+  .ag-floating-top-container .ag-row-pinned,
+  .ag-floating-top-container .ag-row-pinned .ag-cell {
+    border-bottom: none !important;
+  }
+`;
