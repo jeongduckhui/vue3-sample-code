@@ -780,3 +780,28 @@ const GridWrapper = styled.div`
     border-bottom: none !important;
   }
 `;
+
+
+
+
+
+const GridWrapper = styled.div`
+  .ag-floating-top-container,
+  .ag-floating-top-container .ag-row,
+  .ag-floating-top-container .ag-row-pinned,
+  .ag-floating-top-container .ag-cell,
+  .ag-floating-top-container .ag-cell-wrapper {
+    border-bottom: none !important;
+    box-shadow: none !important;
+  }
+
+  .ag-floating-top-container::before,
+  .ag-floating-top-container::after,
+  .ag-floating-top-container .ag-row::before,
+  .ag-floating-top-container .ag-row::after,
+  .ag-floating-top-container .ag-cell::before,
+  .ag-floating-top-container .ag-cell::after {
+    border-bottom: none !important;
+    box-shadow: none !important;
+  }
+`;
