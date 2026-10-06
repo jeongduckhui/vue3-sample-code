@@ -1,4 +1,4 @@
-
+ㅑ
 const getDisplayValue = (params) => {
   const { api, node, colDef, value } = params;
 
@@ -805,3 +805,16 @@ const GridWrapper = styled.div`
     box-shadow: none !important;
   }
 `;
+
+
+
+
+
+.ag-header-cell.product-info-header .ag-header-cell-comp-wrapper {
+  height: 100%;
+}
+
+.ag-header-cell.product-info-header .ag-header-cell-label {
+  height: 100%;
+  align-items: center;
+}
