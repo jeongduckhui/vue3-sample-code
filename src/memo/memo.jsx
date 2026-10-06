@@ -818,3 +818,26 @@ const GridWrapper = styled.div`
   height: 100%;
   align-items: center;
 }
+
+
+
+
+
+
+.ag-header-group-cell.product-info-header,
+.ag-header-group-cell.product-info-header .ag-header-cell-comp-wrapper,
+.ag-header-group-cell.product-info-header .ag-header-group-cell-label {
+  overflow: visible !important;
+}
+
+.ag-header-group-cell.product-info-header .ag-header-group-cell-label {
+  height: 100%;
+  align-items: center !important;
+  transform: none !important;
+}
+
+/* 라벨 전체가 아니라 글자만 이동 */
+.ag-header-group-cell.product-info-header .ag-header-group-text {
+  position: relative;
+  top: 12px;
+}
