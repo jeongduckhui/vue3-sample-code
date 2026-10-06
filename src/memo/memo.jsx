@@ -841,3 +841,37 @@ const GridWrapper = styled.div`
   position: relative;
   top: 12px;
 }
+
+
+
+
+
+
+/* 제품 정보가 속한 첫 번째 헤더 행 */
+.ag-header-row:has(.product-info-header) {
+  overflow: visible !important;
+  z-index: 10;
+}
+
+/* 제품 정보 셀 자체를 두 줄 높이로 확장 */
+.ag-header-group-cell.product-info-header {
+  height: calc(100% + 24px) !important;
+  overflow: visible !important;
+  align-items: center !important;
+}
+
+.ag-header-group-cell.product-info-header .ag-header-cell-comp-wrapper {
+  height: 100% !important;
+}
+
+.ag-header-group-cell.product-info-header .ag-header-group-cell-label {
+  height: 100% !important;
+  align-items: center !important;
+  transform: none !important;
+}
+
+.ag-header-group-cell.product-info-header .ag-header-group-text {
+  position: static !important;
+  top: auto !important;
+  transform: none !important;
+}
